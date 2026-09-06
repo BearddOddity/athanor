@@ -74,3 +74,6 @@ BOYB
 
 # Exception: Tauri config must be in repo
 !tauri.conf.json
+
+# Exception: Tauri capabilities
+!src-tauri/capabilities/

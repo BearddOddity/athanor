@@ -30,7 +30,12 @@ pub enum Format {
 impl Format {
     pub fn from_extension(ext: &str) -> Self {
         match ext.to_lowercase().as_str() {
-            "xmlb" | "pkgb" | "engb" | "chrb" | "navb" | "boyb" => Format::XMLB,
+            "xmlb" => Format::XMLB,
+            "pkgb" => Format::PKGB,
+            "engb" => Format::ENGB,
+            "chrb" => Format::CHRB,
+            "navb" => Format::NAVB,
+            "boyb" => Format::BOYB,
             "bnx" => Format::BNX,
             "igb" => Format::IGB,
             "zsm" => Format::ZSM,

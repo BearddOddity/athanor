@@ -2,8 +2,9 @@
 
 use crate::{
     CompileRequest, CompileResult, Modification, ModificationOp,
-    ParsedFile, Result,
+    ParsedFile, Result, builder::BinaryBuilder,
 };
+use crate::formats::Format;
 use std::path::PathBuf;
 
 pub struct Compiler;
@@ -13,21 +14,23 @@ impl Compiler {
         Self
     }
     
-    /// Compile a game file with modifications
     pub fn compile(&self, request: &CompileRequest) -> Result<CompileResult> {
-        let mut file = self.read_file(&request.input_path)?;
+        // Resolve the actual file path from source
+        let actual_input_path = self.resolve_game_path(&request.source, &request.input_path)?;
         
-        // Apply modifications
+        // NEVER modify the source - read to create a copy
+        let mut file = self.read_file(&actual_input_path)?;
+        file.metadata.path = request.input_path.clone(); // Keep original relative path
+        
         if let Some(modifications) = &request.modifications {
             for modification in modifications {
                 self.apply_modification(&mut file, modification)?;
             }
         }
         
-        // Recalculate headers
         self.recalculate_headers(&mut file);
         
-        // Write output
+        // Output ALWAYS goes to output_path - never touching the source
         let output_data = self.serialize(&file)?;
         if let Some(parent) = request.output_path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -45,7 +48,45 @@ impl Compiler {
         })
     }
     
-    /// Read and parse a game file
+    /// Resolve a game-relative path to an actual file path
+    /// 
+    /// This implements the "Bring Your Own Game" principle:
+    /// - If source is None, input_path is used as-is
+    /// - If source is provided, input_path is treated as relative to source
+    /// - ISO/XBE support planned for future
+    fn resolve_game_path(&self, source: &Option<PathBuf>, input_path: &PathBuf) -> Result<PathBuf> {
+        match source {
+            Some(source_path) if source_path.is_dir() => {
+                // Directory source - resolve relative path
+                let full_path = source_path.join(input_path);
+                if full_path.exists() {
+                    Ok(full_path)
+                } else {
+                    Err(crate::AthanorError::Parse(
+                        format!("File not found in game source: {}", full_path.display())
+                    ))
+                }
+            }
+            Some(source_path) if source_path.extension().map(|e| e == "iso").unwrap_or(false) => {
+                // ISO source - would need iso9660 parsing
+                // For now, return error suggesting directory extraction
+                Err(crate::AthanorError::Parse(
+                    "ISO mounting not yet implemented. Please extract ISO to a directory.".to_string()
+                ))
+            }
+            Some(source_path) if source_path.extension().map(|e| e == "xbe").unwrap_or(false) => {
+                // XBE source - would need XBE parsing
+                Err(crate::AthanorError::Parse(
+                    "XBE mounting not yet implemented. Please extract XBE contents to a directory.".to_string()
+                ))
+            }
+            _ => {
+                // No source or direct path
+                Ok(input_path.clone())
+            }
+        }
+    }
+    
     pub fn read_file(&self, path: &PathBuf) -> Result<ParsedFile> {
         crate::parser::parse_file(path)
     }
@@ -99,6 +140,118 @@ impl Compiler {
     }
     
     fn serialize(&self, file: &ParsedFile) -> Result<Vec<u8>> {
-        Ok(file.raw_data.clone())
+        let format = crate::formats::Format::from_extension(&file.metadata.format);
+        match format {
+            Format::XMLB => {
+                let mut builder = crate::builder::XMLBBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.strings = file.strings.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::PKGB => {
+                let mut builder = crate::builder::PKGBBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.strings = file.strings.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::ENGB => {
+                let mut builder = crate::builder::ENGBBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.strings = file.strings.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::BOYB => {
+                let mut builder = crate::builder::BOYBBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.strings = file.strings.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::CHRB => {
+                let mut builder = crate::builder::CHRBBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::NAVB => {
+                let mut builder = crate::builder::NAVBBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::BNX => {
+                let mut builder = crate::builder::BNXBuilder::new();
+                builder.pairs = file.nodes.iter().map(|n| {
+                    (n.name.clone().unwrap_or_default(), 
+                     n.properties.first().and_then(|p| match &p.value {
+                         crate::PropertyValue::String(s) => Some(s.clone()),
+                         _ => None,
+                     }).unwrap_or_default())
+                }).collect();
+                builder.compile(&file.raw_data)
+            }
+            Format::IGB => {
+                let mut builder = crate::builder::IGBBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.strings = file.strings.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::ZSM => {
+                let mut builder = crate::builder::ZSMBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.strings = file.strings.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::ZSS => {
+                let mut builder = crate::builder::ZSSBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.strings = file.strings.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::ZAM => {
+                let mut builder = crate::builder::ZAMBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.strings = file.strings.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::ANIM => {
+                let mut builder = crate::builder::ANIMBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::PHYS => {
+                let mut builder = crate::builder::PHYSBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::AUD => {
+                let mut builder = crate::builder::AUDBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::COMP => {
+                let mut builder = crate::builder::COMPBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::PBR => {
+                let mut builder = crate::builder::PBRBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::PLGN => {
+                let mut builder = crate::builder::PLGNBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::SAVE => {
+                let mut builder = crate::builder::SAVEBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            Format::PIPE => {
+                let mut builder = crate::builder::PIPEBuilder::new();
+                builder.nodes = file.nodes.clone();
+                builder.compile(&file.raw_data)
+            }
+            _ => Ok(file.raw_data.clone()),
+        }
     }
 }

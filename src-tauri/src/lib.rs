@@ -1,4 +1,8 @@
 //! Athanor Core - Binary format assembly, disassembly, and compilation engine
+//! 
+//! This is a console recompilation engine. Athanor never stores game assets -
+//! it scans the game at the time of assembly. Users provide their own game.iso,
+//! game.xbe, or game directory.
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -75,6 +79,8 @@ pub struct CompileRequest {
     pub input_path: PathBuf,
     pub output_path: PathBuf,
     pub format: String,
+    /// Path to game.iso, game.xbe, or game directory - scanned dynamically at assembly time
+    pub source: Option<PathBuf>,
     pub modifications: Option<Vec<Modification>>,
 }
 

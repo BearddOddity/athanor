@@ -17,7 +17,16 @@ use tracing::info;
 
 #[derive(Deserialize)]
 struct ParseRequest {
+    /// Path within game (relative to source)
     path: String,
+    /// Path to game source (ISO/XBE/dir)
+    source: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ScanRequest {
+    /// Path to game.iso, game.xbe, or game directory
+    source: String,
 }
 
 #[derive(Deserialize)]
@@ -25,6 +34,8 @@ struct ApiCompileRequest {
     input_path: String,
     output_path: String,
     format: String,
+    /// Path to game source (ISO/XBE/dir) - scanned dynamically at assembly time
+    source: Option<String>,
     modifications: Option<Vec<Modification>>,
 }
 
@@ -38,6 +49,7 @@ struct ApiResponse<T: Serialize> {
 fn build_router() -> Router {
     Router::new()
         .route("/api/formats", get(list_formats))
+        .route("/api/scan", post(scan_handler))
         .route("/api/files", get(list_files))
         .route("/api/parse", post(parse_file_handler))
         .route("/api/disassemble", post(disassemble_handler))
@@ -79,35 +91,124 @@ async fn list_formats() -> impl IntoResponse {
 }
 
 async fn list_files() -> impl IntoResponse {
-    let game_dir = std::env::var("XMG2_GAME")
-        .unwrap_or_else(|_| "D:/My Games/X-Men Legends II Rise of Apocalypse".to_string());
+    // This endpoint is deprecated - use /api/scan with source parameter
+    // For backward compatibility, check for XMG2_GAME but warn
+    let game_dir = std::env::var("XMG2_GAME");
+    
+    if let Ok(dir) = game_dir {
+        let path = PathBuf::from(&dir);
+        if path.exists() && path.is_dir() {
+            let mut files = Vec::new();
+            
+            if let Ok(entries) = std::fs::read_dir(&path) {
+                for entry in entries.flatten() {
+                    let p = entry.path();
+                    if p.is_file() {
+                        let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
+                        files.push(serde_json::json!({
+                            "path": p.to_string_lossy(),
+                            "name": entry.file_name().to_string_lossy(),
+                            "size": entry.metadata().map(|m| m.len()).unwrap_or(0),
+                            "ext": format!(".{}", ext),
+                            "deprecated": true,
+                            "warning": "Use /api/scan with source parameter instead of XMG2_GAME"
+                        }));
+                    }
+                }
+            }
+            
+            Json(ApiResponse::<serde_json::Value> {
+                success: true,
+                data: Some(serde_json::json!(files)),
+                error: Some("Deprecated endpoint. Use /api/scan instead.".to_string()),
+            })
+        } else {
+            Json(ApiResponse::<serde_json::Value> {
+                success: false,
+                data: None,
+                error: Some("XMG2_GAME environment variable points to invalid directory".to_string()),
+            })
+        }
+    } else {
+        Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some("Use /api/scan endpoint instead of deprecated /api/files".to_string()),
+        })
+    }
+}
+
+async fn scan_handler(Json(req): Json<ScanRequest>) -> impl IntoResponse {
+    let source_path = PathBuf::from(&req.source);
+    if !source_path.exists() {
+        return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(format!("Source path does not exist: {}", req.source)),
+        });
+    }
+    
     let mut files = Vec::new();
     
-    if let Ok(entries) = std::fs::read_dir(game_dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() {
-                let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-                files.push(serde_json::json!({
-                    "path": path.to_string_lossy(),
-                    "name": entry.file_name().to_string_lossy(),
-                    "size": entry.metadata().map(|m| m.len()).unwrap_or(0),
-                    "ext": format!(".{}", ext),
-                }));
+    if source_path.is_file() {
+        // Single file (ISO/XBE) - for now just list the container itself
+        // TODO: Add ISO/XBE parsing to list contents
+        files.push(serde_json::json!({
+            "path": source_path.to_string_lossy(),
+            "name": source_path.file_name().unwrap().to_string_lossy(),
+            "size": source_path.metadata().map(|m| m.len()).unwrap_or(0),
+            "ext": source_path.extension().and_then(|e| e.to_str()).unwrap_or(""),
+            "is_container": true,
+            "note": "ISO/XBE container - file listing not yet implemented"
+        }));
+    } else if source_path.is_dir() {
+        // Directory - list contents recursively
+        if let Ok(entries) = std::fs::read_dir(&source_path) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                    files.push(serde_json::json!({
+                        "path": path.to_string_lossy(),
+                        "name": entry.file_name().to_string_lossy(),
+                        "size": entry.metadata().map(|m| m.len()).unwrap_or(0),
+                        "ext": format!(".{}", ext),
+                        "is_container": false,
+                    }));
+                }
             }
         }
     }
     
     Json(ApiResponse {
         success: true,
-        data: Some(files),
+        data: Some(serde_json::Value::Array(files)),
         error: None,
     })
 }
 
 async fn parse_file_handler(Json(req): Json<ParseRequest>) -> impl IntoResponse {
+    let _compiler = athanor_core::Compiler::new();
     let path = PathBuf::from(&req.path);
-    match athanor_core::parser::parse_file(&path) {
+    
+    // Resolve source if provided
+    let actual_path = if let Some(source) = &req.source {
+        let source_path = PathBuf::from(source);
+        if source_path.is_dir() {
+            source_path.join(&path)
+        } else {
+            // For now, require directory sources
+            return Json(ApiResponse::<serde_json::Value> {
+                success: false,
+                data: None,
+                error: Some("Source must be a directory (ISO/XBE support planned)".to_string()),
+            });
+        }
+    } else {
+        path
+    };
+    
+    match athanor_core::parser::parse_file(&actual_path) {
         Ok(parsed) => Json(ApiResponse::<serde_json::Value> {
             success: true,
             data: Some(serde_json::to_value(parsed).unwrap_or_default()),
@@ -142,6 +243,7 @@ async fn compile_handler(Json(req): Json<ApiCompileRequest>) -> impl IntoRespons
         input_path: PathBuf::from(&req.input_path),
         output_path: PathBuf::from(&req.output_path),
         format: req.format,
+        source: req.source.map(PathBuf::from),
         modifications: req.modifications,
     };
     
