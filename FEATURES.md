@@ -2,7 +2,15 @@
 
 ## Overview
 
-**Athanor Engine** is a Rust-based game modification platform combining binary analysis, 3D editing, and AI-assisted workflows.
+**Athanor Engine** is a Rust-based game modification platform designed specifically for **X-Men Legends II: Rise of Apocalypse** and its sibling titles, combining binary analysis, 3D editing, decompilation, and AI-assisted workflows to enable console game porting to PC.
+
+**Target Games**:
+- X-Men Legends II: Rise of Apocalypse (PS2, Xbox, GameCube, PC)
+- Marvel: Ultimate Alliance (PS2, Xbox, Wii, PC)
+- Marvel: Ultimate Alliance 2 (PS2, PS3, Xbox 360, Wii, PC)
+- X-Men Legends (Xbox exclusive version - recompiling to PC)
+
+**Ultimate Goal**: Decompile console-exclusive shelved games and recompile them for PC with enhancements.
 
 **Repository**: https://github.com/BearddOddity/athanor
 
@@ -42,6 +50,80 @@
 
 ---
 
+# CONSOLE GAME DECOMPILATION TARGETS
+
+## Target Game Files
+
+| Game | Platform | Status | Key Files |
+|------|----------|--------|-----------|
+| **X-Men Legends II** | PS2 | Analyzed | XMLB, BNX, IGB, ZSM, ZAM, ANIM, PHYS, AUD |
+| **X-Men Legends II** | Xbox | Analyzed | Same formats |
+| **X-Men Legends II** | GameCube | Todo | Same formats |
+| **X-Men Legends II** | PC | Analyzed | Same formats |
+| **Marvel: Ultimate Alliance** | PS2 | Todo | Similar formats |
+| **Marvel: Ultimate Alliance** | Xbox 360 | Todo | Similar formats |
+| **Marvel: Ultimate Alliance 2** | PS3 | Todo | Similar formats |
+| **X-Men Legends** | Xbox | Todo | Similar formats |
+
+## Console-Specific Features
+
+| Feature | Description | Platform | Status |
+|---------|-------------|----------|--------|
+| **Console Binary Parsing** | Parse Xbox/PS2/GC executable formats | All | Todo |
+| **Executable Decompilation** | Convert console EXE to readable code | All | Todo |
+| **Memory Dump Analysis** | Analyze runtime memory structures | All | Todo |
+| **Save Data Extraction** | Extract/decrypt console save data | All | Todo |
+| **Asset Extraction** | Pull assets from console formats | All | Todo |
+| **Disc Image Mounting** | Mount ISO/GCM/CSO images | All | Todo |
+| **DVD Layer Detection** | Handle dual-layer DVDs | PS2/GC | Todo |
+| **DRM/Copyright Removal** | Strip console DRM | All | Todo |
+
+## PC Recompilation Features
+
+| Feature | Description | Dependencies | Status |
+|---------|-------------|--------------|--------|
+| **PC Binary Generation** | Compile modified code to PC EXE | Assembler | Todo |
+| **DirectX Wrapper** | Wrap OpenGL->DirectX calls | None | Todo |
+| **Widescreen Support** | Fix aspect ratio for modern displays | Binary Core | Todo |
+| **60 FPS Unlock** | Remove frame rate locks | Binary Core | Todo |
+| **Controller Support** | Add Xbox/PS controller mapping | Input System | Todo |
+| **Achievement Hooks** | Add Steam achievements | PC Binary | Todo |
+| **Cloud Saves** | Add Steam cloud support | Save System | Todo |
+| **Mod Loader** | Load PC mods alongside console assets | Asset Pipeline | Todo |
+
+## Porting Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CONSOLE PORTING WORKFLOW                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. EXTRACT                                                        │
+│     Console Disc → Mount → Extract All Files                        │
+│                                                                     │
+│  2. ANALYZE                                                        │
+│     Binary Formats → Ghidra/Radare2 → Document Structures          │
+│                                                                     │
+│  3. DECOMPILE                                                       │
+│     Console EXE → Decompiled Code → Symbol Tables                   │
+│                                                                     │
+│  4. CONVERT ASSETS                                                 │
+│     Console Textures → PC Formats → Rebuild Bundles                 │
+│                                                                     │
+│  5. RECOMPILE                                                       │
+│     Modified Code → PC EXE → Link with Engine                       │
+│                                                                     │
+│  6. ENHANCE                                                         │
+│     Widescreen → 60 FPS → Controller → Achievements                │
+│                                                                     │
+│  7. DISTRIBUTE                                                      │
+│     Build → Package → Mod Loader Ready                             │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 # I. BINARY CORE SUBSYSTEM
 
 ## 1.1 Assembler/Disassembler
@@ -75,6 +157,73 @@
 | **Radare2 Integration** | Alternative RE via r2pipe | Radare2 | Todo |
 | **Format Identification** | Auto-detect binary format | Binary Parser | Todo |
 | **Signature Database** | Common format signatures | Format ID | Todo |
+| **Console EXE Analysis** | Analyze PS2/Xbox/GC executables | Ghidra MCP | Todo |
+| **Symbol Recovery** | Recover lost function names | Ghidra MCP | Todo |
+| **Cross-Title Analysis** | Compare binaries across MUA/XL games | Compiler | Todo |
+| **Batch Decompilation** | Decompile entire game executable | Ghidra MCP | Todo |
+| **AI Training Data** | Generate training data from analysis | Batch Decomp | Todo |
+
+## 1.4 X-Men Legends II Format Analysis
+
+Based on reverse engineering of X-Men Legends II: Rise of Apocalypse (PC version):
+
+| Format | Extension | Description | Status |
+|--------|-----------|-------------|--------|
+| **Menu/UI** | XMLB | Menu layouts, settings, HUD elements | Analyzed |
+| **Config** | BNX | Key-value configuration, options | Analyzed |
+| **Image** | IGB | HUD textures, image data | Analyzed |
+| **Sound Index** | ZSM | Sound metadata, bank indices | Analyzed |
+| **Sound Data** | ZSS | Audio stream data | Todo |
+| **Minimap** | ZAM | Automap/waypoint data | Analyzed |
+| **Animation** | ANIM | Animation state machine data | Analyzed |
+| **Physics** | PHYS | Collision shapes, physics data | Analyzed |
+| **Audio** | AUD | Audio bus definitions | Analyzed |
+| **Compositor** | COMP | Visual effects pipeline | Todo |
+| **Material** | PBR | Material definitions | Analyzed |
+| **Plugin** | PLGN | Plugin manifests | Todo |
+| **Save** | SAVE | Save game structure | Analyzed |
+| **Pipeline** | PIPE | Content pipeline data | Todo |
+| **Package** | PKGB | Asset packages, textures | Todo |
+| **Engine** | ENGB | Engine configuration | Todo |
+| **Character** | CHRB | Character definitions | Todo |
+| **Navigation** | NAVB | Navmesh, pathfinding | Todo |
+| **Buoy** | BOYB | Waypoint/buoy data | Todo |
+
+### Known Format Structures (XMLB)
+
+```
+XMLB Header:
+- Magic: 0x584D4C42 (XMLB)
+- Version: u32
+- Node Count: u32
+- String Count: u32
+- Header Size: u32
+
+Node Structure:
+- Type ID: u32
+- Property Count: u16
+- Data Offset: u32
+
+Property Types:
+- String (offset to string table)
+- Integer (i32)
+- Float (f32)
+- Boolean (u8)
+- Vector3/4 (f32 array)
+- Raw bytes
+```
+
+### Identified Functions (via Python analysis):
+
+```
+Core Functions:
+- ParseXMLB() - Parse XMLB file
+- BuildXMLB() - Build XMLB from AST
+- AppendNode() - Add new node to structure
+- FindNodes() - Search nodes by type/name
+- DumpStrings() - Extract string table
+- PatchXMLB() - Apply modifications
+```
 | **Cross-Title Analysis** | Compare binaries across games | Compiler | Todo |
 | **Batch Decompilation** | Decompile multiple binaries | Ghidra/Radare2 | Todo |
 | **AI Training Data** | Generate training data from analysis | Batch Decomp | Todo |
@@ -431,36 +580,66 @@ Plugin System ──────┴──> Format Plugins
 ## In Progress
 - [ ] **JavaScript Execution in Tauri Webview** (blocking editor interactivity)
 
-## Planned (Phase 1)
-- [ ] WebGL Renderer improvements
-- [ ] Transform Gizmos
-- [ ] Undo/Redo System
-- [ ] Save/Load System
-- [ ] Ghidra MCP Server
+## Planned (Phase 1) - Console Binary Analysis
+- [ ] Console disc extraction (Xbox ISO, PS2 ISO, GCM)
+- [ ] Executable format parsers (Xbox XBE, PS2 ELF, GCN DOL)
+- [ ] Ghidra MCP Server for headless analysis
+- [ ] Format documentation for all 19 formats
+- [ ] Symbol recovery and documentation
 
-## Planned (Phase 2)
-- [ ] ECS Core
-- [ ] Signal/Event System
-- [ ] PBR Materials
-- [ ] Physics Integration
-- [ ] Animation State Machine
+## Planned (Phase 2) - Asset Conversion
+- [ ] Console texture extraction (DXT -> PC formats)
+- [ ] Audio format conversion
+- [ ] Model format conversion (with skeleton)
+- [ ] Level data extraction and rebuild
+- [ ] Save data decryption
 
-## Planned (Phase 3)
-- [ ] Content Pipeline
-- [ ] Blender Integration
-- [ ] CMake Integration
-- [ ] Plugin Architecture
-- [ ] AI Upscaling
+## Planned (Phase 3) - PC Recompilation
+- [ ] PC EXE generation framework
+- [ ] DirectX/OpenGL wrapper
+- [ ] Widescreen fix system
+- [ ] Frame rate unlocker
+- [ ] Controller input mapping
 
-## Planned (Phase 4)
-- [ ] Full Ghidra/Radare2 Integration
-- [ ] Cross-Binary Analysis
-- [ ] AI Training Data Generation
-- [ ] Mod Generator
+## Planned (Phase 4) - Enhancement
+- [ ] Steam achievements integration
+- [ ] Cloud saves
+- [ ] Mod loader
+- [ ] AI upscaling integration
+- [ ] Cross-title mod compatibility
 
 ---
 
-# XII. FILE STRUCTURE
+# XII. CONSOLE PORTING PRIORITY
+
+## Highest Priority (Required for XL2 PC)
+1. [ ] Complete XMLB format documentation
+2. [ ] IGB texture extraction/rebuild
+3. [ ] ANIM animation export
+4. [ ] CHRB character format
+5. [ ] Full disassembly of game executable
+
+## High Priority (For Enhanced PC Version)
+1. [ ] 60 FPS unlock
+2. [ ] Widescreen support
+3. [ ] Controller support
+4. [ ] Higher resolution textures
+
+## Medium Priority (For Console Ports)
+1. [ ] PS2 disc extraction
+2. [ ] Xbox XBE analysis
+3. [ ] Cross-platform binary generation
+4. [ ] Console save data compatibility
+
+## Future (For Other Games)
+1. [ ] Marvel: Ultimate Alliance formats
+2. [ ] X-Men Legends (Xbox) formats
+3. [ ] General console executable decompilation
+4. [ ] Universal porting framework
+
+---
+
+# XIII. FILE STRUCTURE
 
 ```
 athanor/
@@ -537,7 +716,53 @@ athanor/
 | `GET /editor` | Asset editor UI |
 | `GET /level-editor` | Level editor UI |
 
+## Game Data Locations
+
+| Game | Default Path |
+|------|--------------|
+| X-Men Legends II (PC) | `D:\My Games\X-Men Legends II Rise of Apocalypse` |
+| MUA (PC) | `C:\Program Files\Marvel - Ultimate Alliance` |
+| MUA2 (PC) | `C:\Program Files\Marvel - Ultimate Alliance 2` |
+
+---
+
+# XIV. GAME-SPECIFIC DOCUMENTATION
+
+## X-Men Legends II: Rise of Apocalypse
+
+### Game Engine
+- **Engine**: Proprietary (similar to engine used in MUA)
+- **Renderer**: OpenGL (PC), Custom (Console)
+- **Platforms**: PS2, Xbox, GameCube, PC
+
+### Known Executables
+| Platform | Filename | Format |
+|----------|----------|--------|
+| PC | `game.exe` | PE32 |
+| PS2 | `SLES_524.13` | ELF |
+| Xbox | `default.xbe` | XBE |
+| GameCube | `game.dol` | DOL |
+
+### Modding Potential
+| Area | Potential | Notes |
+|------|-----------|-------|
+| Characters | High | New playable characters via CHRB |
+| Levels | High | New levels via XMLB/ANIM |
+| Textures | High | New textures via PKGB/IGB |
+| Audio | Medium | Voice lines via ZSM/ZSS |
+| UI | High | Menu layouts via XMLB |
+| Physics | Medium | Collision tweaking via PHYS |
+| Animation | High | New moves via ANIM |
+
+### Priority Mods
+1. **Widescreen Fix** - Modify renderer settings in ENGB
+2. **60 FPS Unlock** - Remove frame rate cap
+3. **New Characters** - Dump CHRB, modify, rebuild
+4. **New Levels** - Full level creation workflow
+5. **Texture Upscaling** - Replace IGB with higher res
+
 ---
 
 **Last Updated**: 2026-09-06  
-**Version**: 0.1.0
+**Version**: 0.1.0  
+**Purpose**: Console game decompilation for X-Men Legends series
