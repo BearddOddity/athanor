@@ -1,0 +1,26 @@
+{
+  "productName": "Athanor Engine",
+  "version": "0.1.0",
+  "identifier": "athanor",
+  "build": {
+    "devUrl": "http://localhost:3459/editor"
+  },
+  "app": {
+    "security": {
+      "csp": "default-src 'self' http://127.0.0.1:*; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://127.0.0.1:*"
+    },
+    "windows": [
+      {
+        "title": "Athanor Engine",
+        "url": "http://127.0.0.1:3459/editor",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "center": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": false
+  }
+}
