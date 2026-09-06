@@ -1,8 +1,8 @@
-# Athanor Engine
+# Athanor
 
 **Full-stack binary assembly, disassembly, and compilation engine for game formats**
 
-Athanor (formerly Alchemy Engine Suite) is a high-performance Rust backend + Bun frontend system for parsing, modifying, and recompiling Xbox and PC game binary formats. Designed for the X-Men Legends II Rise of Apocalypse modding community.
+Athanor (recreated from Alchemy Engine) is a high-performance Rust backend + Bun frontend system for parsing, modifying, and recompiling Xbox and PC game binary formats. Designed for the X-Men Legends II Rise of Apocalypse modding community.
 
 ## Features
 
