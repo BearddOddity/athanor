@@ -2,18 +2,31 @@
 /target/
 Cargo.lock
 
-# Editor configs
-.vscode/
-.idea/
-*.swp
-*.swo
+# Godot project settings - only edit if you know what you are doing
+export_presets.cfg
 
-# IDE and OS files
+# Godot .gitignore patterns
+# See https://godotengine.org/learn/godot-projects-version-control
+
+# Godot 3
+settings.json
+
+# Godot 4
+icon.svg
+icon.png
+user.cfg
+
+# Editor caches
+.export_presets.cfg
+
+# OS files
 .DS_Store
 Thumbs.db
 _desktop
-*.tmp
-*.temp
+
+# IDE and OS files
+.vscode/
+.idea/
 
 # Rust
 *.rs.bk
@@ -38,3 +51,23 @@ rustfmt.toml.editor/
 *.gdt
 *analysis*
 *.fidb
+
+# Custom binary formats - use Anchorpoint for version control
+XMLB
+BNX
+IGB
+ZSM
+ZAM
+ANIM
+PHYS
+AUD
+COMP
+PBR
+PLGN
+SAVE
+PIPE
+PKGB
+ENGB
+CHRB
+NAVB
+BOYB
