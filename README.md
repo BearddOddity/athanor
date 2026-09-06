@@ -180,8 +180,10 @@ cargo build --release --manifest-path Cargo.toml
 
 ### Current Issues
 
-- [ ] JavaScript execution in Tauri webview not working (blocking editor interactivity)
-- [ ] System tray not fully wired
+- [ ] Add more format parsers (ZSS, NAVB, CHRB, etc.)
+- [ ] Implement actual XMLB compilation
+- [ ] Texture export for IGB format
+- [ ] Level editor (V3) functionality
 
 ### Known Working
 
@@ -190,6 +192,10 @@ cargo build --release --manifest-path Cargo.toml
 - [x] Editor HTML serving
 - [x] Headless mode
 - [x] GUI mode (window opens, UI renders)
+- [x] System tray (click to show, close-to-hide)
+- [x] JavaScript execution in Tauri webview
+- [x] Tauri 2 capabilities configured
+- [x] IPC commands (show_window, hide_window)
 
 ## Contributing
 
