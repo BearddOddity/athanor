@@ -5,10 +5,8 @@ use crate::{
     AthanorError, ParsedFile, ParsedNode, ParsedProperty, PropertyValue,
     Result,
 };
-use crate::dxt::{decompress, DxtFormat};
 use crate::formats::{Format, FormatDetector};
 use std::path::Path;
-use std::collections::HashMap;
 
 /// IGB Texture metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -169,8 +169,6 @@ fn decode_dxt5_alpha(data: &[u8], offset: usize) -> [u8; 16] {
 
     for i in 0..16 {
         let code = ((bits >> (i * 3)) & 0x7) as u8;
-        let a = a0 as u32;
-        let b = a1 as u32;
         alpha_vals[i] = match (a0, a1) {
             (a0_val, b_val) if a0_val > b_val => match code {
                 0 => a0_val,

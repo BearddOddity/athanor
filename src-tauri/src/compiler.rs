@@ -18,9 +18,17 @@ impl Compiler {
         // Resolve the actual file path from source
         let actual_input_path = self.resolve_game_path(&request.source, &request.input_path)?;
         
-        // NEVER modify the source - read to create a copy
+        // SAFETY: Never modify the source - read to create a copy
+        // Additional protection: ensure output_path differs from input_path
+        if request.output_path == request.input_path {
+            return Err(crate::AthanorError::Parse(
+                "input_path and output_path must be different".to_string()
+            ));
+        }
+        
+        // Read the file (never writes to actual_input_path)
         let mut file = self.read_file(&actual_input_path)?;
-        file.metadata.path = request.input_path.clone(); // Keep original relative path
+        file.metadata.path = request.input_path.clone(); // Keep original relative path for tracking
         
         if let Some(modifications) = &request.modifications {
             for modification in modifications {

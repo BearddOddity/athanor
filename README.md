@@ -159,6 +159,50 @@ D:\My apps\Athanor\
  |----------|---------|-------------|
  | `ATHANOR_PORT` | 3459 | HTTP server port |
  | `XMG2_GAME` | — | **Deprecated** - use `source` parameter in API requests |
+ 
+ ## Bring Your Own Game (BYO Game) Architecture
+ 
+ ### Core Principle
+ 
+ The Athanor engine enforces a strict **"Original files are never modified"** policy:
+ 
+ | Action | What Happens |
+ |--------|--------------|
+ | **Parse/Scan** | Reads game files from specified source path (ISO/XBE/directory) |
+ | **Modify** | Applies modifications to a **copy** of the file in memory |
+ | **Compile/Build** | Writes output to a **separate** `output_path` specified per request |
+ | **Original Game** | **Never** touched or written to - remains pristine |
+ 
+ ### Safety Guarantees
+ 
+ - ✅ `input_path` and `output_path` must be different paths (enforced at compile time)
+ - ✅ Source directory files are read-only during compilation
+ - ✅ Output always goes to user-specified destination
+ - ✅ Engine errors never modify source files
+ - ✅ All 20 format builders support round-trip (parse → modify → rebuild → new file)
+ 
+ ### Typical Workflow
+ 
+ ```text
+ User Request:
+   source: "D:/My Games/X-Men Legends II"
+   input_path: "menu/menuscreen.xmlb"
+   output_path: "output/modified_menuscreen.xmlb"
+   
+ Engine Behavior:
+   1. Resolve actual_input_path = source/input_path
+   2. Read file from actual_input_path (copy to memory)
+   3. Apply modifications in memory only
+   4. Write output to output_path (NEW file)
+   5. Original game file at actual_input_path: UNCHANGED
+ ```
+ 
+ ## Environment Variables
+ 
+ | Variable | Default | Description |
+ |----------|---------|-------------|
+ | `ATHANOR_PORT` | 3459 | HTTP server port |
+ | `XMG2_GAME` | — | **Deprecated** - use `source` parameter in API requests |
 
 ## Console Porting Workflow
 
