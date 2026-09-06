@@ -243,9 +243,9 @@ async fn start_gui_mode(addr: &str) {
             eprintln!("Server error: {}", e);
         }
     });
-    
+
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-    
+
     tauri::Builder::default()
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
