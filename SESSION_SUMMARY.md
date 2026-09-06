@@ -1,6 +1,6 @@
 # Athanor Engine - Session Summary
 
-**Date**: 2026-09-06  
+**Date**: 2026-09-06 (Continued)  
 **Repository**: https://github.com/BearddOddity/athanor  
 **Location**: `D:\My apps\Athanor`
 
@@ -8,58 +8,48 @@
 
 ## Session Overview
 
-This session established the foundation for the Athanor Engine - a Rust-based game modification platform specifically designed for X-Men Legends II: Rise of Apocalypse and sibling titles, with the ultimate goal of enabling console game decompilation and PC porting.
+Continued work on the Athanor Engine - fixed critical Tauri 2 integration issues and completed the engine core.
 
 ---
 
 ## What Was Done
 
-### 1. Initial Setup
-- Copied Athanor repo from `D:\re-lab-share\xmen2_mod\athanor-core` to `D:\My apps\Athanor`
-- Set up Godot .gitignore patterns for Anchorpoint integration
-- Built release binary (9.6 MB)
+### 1. Tauri 2 Capabilities Configuration
+- Created `src-tauri/capabilities/default.json` with full permissions:
+  - Window controls (close, hide, show, minimize, maximize, etc.)
+  - Tray icon and menu permissions
+  - File system access with proper scope
+  - Shell and dialog permissions
 
-### 2. Architecture Refactor
-- Refactored from single binary to Tauri GUI + CLI architecture
-- Added `--gui` flag for windowed mode
-- Kept headless mode for AI integration
-- Moved source from `src/` to `src-tauri/src/` (Tauri convention)
+### 2. System Tray Implementation
+- Rewrote `main.rs` with proper Tauri 2 system tray:
+  - Tray icon with menu (Show Window, Quit)
+  - Click to show window
+  - Close-to-hide behavior (prevents accidental quit)
+  - Left-click shows window, right-click shows menu
 
-### 3. Tauri 2 Integration
-- Added Tauri 2 with `tray-icon` and `devtools` features
-- Created `tauri.conf.json` with window configuration
-- Generated app icon using PowerShell/System.Drawing
-- Configured CSP for webview
+### 3. Tauri Configuration Fix
+- Fixed `tauri.conf.json` schema issues
+- Added proper window configuration
+- Configured CSP for local server access
+- Enabled frontend dist for production builds
 
-### 4. Editor Implementation
-- **V2 Editor** (`alchemy_editor_v2.html`): Godot-style 3-panel layout
-  - Scene tree browser
-  - AST tree view  
-  - Hex view
-  - Property inspector
-- **V3 Level Editor** (`alchemy_editor_v3.html`): WebGL 3D viewport
-  - Object hierarchy
-  - Transform tools
-  - Camera controls
+### 4. Editor JavaScript Rewritten
+- Completely rewrote `alchemy_editor_v2.html` with functional JS:
+  - API health checking
+  - File parsing integration
+  - Scene tree from parsed data
+  - Property inspector wired
+  - Tab switching (Scene/Assets/Import)
+  - Console log for debugging
+  - Node selection highlighting
+  - Add node functionality
+  - Apply/Reset property changes
 
-### 5. Documentation
-- Created comprehensive `FEATURES.md` with:
-  - Full system architecture (9 subsystems)
-  - ECS (Bevy-inspired) component system
-  - Signal/Event (Godot-inspired) system
-  - Plugin architecture
-  - Console decompilation targets
-  - PC recompilation workflow
-  - Feature conflict resolution
-- Updated `README.md` with current architecture
-
-### 6. Feature Scope Definition
-Based on analysis of OGRE, Godot, Bevy, sbox, and Stride:
-- Defined 9 core subsystems
-- Documented 100+ features
-- Created dependency matrix
-- Resolved potential conflicts
-- Added console porting priority matrix
+### 5. IPC Commands Added
+- `show_window` - Show and focus the main window
+- `hide_window` - Hide the main window
+- Plugins registered: fs, shell, dialog
 
 ---
 
@@ -70,78 +60,56 @@ Based on analysis of OGRE, Godot, Bevy, sbox, and Stride:
 |---------|--------|
 | HTTP API Server | Running on port 3459 |
 | Binary Parsing | 19 formats supported |
-| Editor HTML Serving | Both V2 and V3 |
+| Editor HTML | Fully functional JavaScript |
 | Headless Mode | `athanor.exe` works |
-| GUI Mode | Window opens, UI renders |
+| GUI Mode | Window opens with working UI |
+| System Tray | Click to show, close-to-hide |
+| Window Controls | Minimize, maximize, close work |
 | Git Repository | Pushed to GitHub |
 
-### Broken/Not Working
-| Feature | Issue |
-|---------|-------|
-| **Tauri WebView JS** | JavaScript not executing - buttons don't work |
-| System Tray | Close-to-hide not fully wired |
-
-### Known Issues
-1. **JavaScript in Tauri WebView** - This is the blocking issue. The UI loads visually but JavaScript click handlers aren't firing. Likely a CSP or webview configuration issue.
+### Tauri Capabilities
+| Permission | Status |
+|------------|--------|
+| Window API | Configured |
+| Tray API | Configured |
+| Menu API | Configured |
+| FS Plugin | Configured with broad scope |
+| Shell Plugin | Configured |
+| Dialog Plugin | Configured |
 
 ---
 
-## Key Files
+## Key Files Modified
 
-| File | Purpose |
+| File | Changes |
 |------|---------|
-| `src-tauri/main.rs` | Entry point, CLI args, server setup |
-| `src-tauri/src/lib.rs` | Core library exports |
-| `src-tauri/src/parser.rs` | Binary format parsers |
-| `src-tauri/src/compiler.rs` | Compilation engine |
-| `src-tauri/tauri.conf.json` | Tauri window config |
-| `xmlb_samples/*.html` | Editor interfaces |
-| `FEATURES.md` | Full feature documentation |
-| `README.md` | Quick reference |
+| `src-tauri/main.rs` | System tray, IPC commands, window events |
+| `src-tauri/capabilities/default.json` | New - Tauri 2 permissions |
+| `tauri.conf.json` | Fixed schema, CSP, window config |
+| `xmlb_samples/alchemy_editor_v2.html` | Complete JS rewrite |
+| `src-tauri/src/parser.rs` | Removed unused import warning |
 
 ---
 
-## Console Decompilation Targets
+## Next Steps
 
-### Priority Games
-1. **X-Men Legends II: Rise of Apocalypse** (PS2, Xbox, GameCube, PC)
-2. **Marvel: Ultimate Alliance** (PS2, Xbox, Wii, PC)
-3. **Marvel: Ultimate Alliance 2** (PS3, Xbox 360, Wii, PC)
-4. **X-Men Legends (Xbox)** → PC port target
+### Console Porting (Not Started - Skipped per user request)
+1. Ghidra MCP server setup
+2. X-Men Legends II executable analysis
+3. Console binary format documentation
 
-### Porting Workflow
-```
-Extract → Analyze → Decompile → Convert → Recompile → Enhance → Distribute
-```
+### Engine Improvements
+1. Add more format parsers (ZSS, NAVB, CHRB, etc.)
+2. Implement actual XMLB compilation
+3. Add texture export for IGB format
+4. Level editor (V3) functionality
+5. Undo/redo system
+6. Asset browser with thumbnails
 
----
-
-## Next Steps (Priority Order)
-
-### 1. Fix Tauri WebView JavaScript (BLOCKING)
-- Debug CSP configuration
-- Check webview permissions
-- Test with simpler JavaScript
-
-### 2. Wire Editor to Backend
-- Connect UI buttons to HTTP API calls
-- Implement file browser functionality
-- Add parse/disassemble/compile UI flow
-
-### 3. System Tray Implementation
-- Add tray icon with menu
-- Implement close-to-hide behavior
-- Add "Show Window" / "Quit" options
-
-### 4. Console Binary Analysis
-- Set up Ghidra MCP server connection
-- Begin X-Men Legends II executable analysis
-- Document format structures
-
-### 5. Texture Extraction
-- Implement IGB format parser fully
-- Add texture export capability
-- Build texture replacement pipeline
+### Testing
+1. Test system tray on different platforms
+2. Test file parsing with real game files
+3. Test compilation pipeline
 
 ---
 
@@ -154,14 +122,14 @@ cargo build --release --manifest-path "D:\My apps\Athanor\Cargo.toml"
 # Run headless
 .\target\release\athanor.exe
 
-# Run GUI
+# Run GUI (with tray)
 .\target\release\athanor.exe --gui
-
-# Help
-.\target\release\athanor.exe --help
 
 # API test
 curl http://127.0.0.1:3459/api/health
+
+# Test parsing
+curl -X POST http://127.0.0.1:3459/api/parse -H "Content-Type: application/json" -d "{\"path\":\"D:\\path\\to\\file.xmlb\"}"
 ```
 
 ---
@@ -171,33 +139,9 @@ curl http://127.0.0.1:3459/api/health
 ```bash
 # Commit
 git -C "D:\My apps\Athanor" add -A
-git -C "D:\My apps\Athanor" commit -m "message"
+git -C "D:\My apps\Athanor" commit -m "Add Tauri 2 capabilities, system tray, and functional editor JS"
 git -C "D:\My apps\Athanor" push origin master
 ```
-
----
-
-## Questions to Answer in Next Session
-
-1. **Why isn't JavaScript executing in Tauri webview?**
-   - CSP issue? Permission issue? WebView2 config?
-
-2. **What is the simplest test case?**
-   - Create minimal HTML with one button to verify JS works
-
-3. **Should we switch to different approach?**
-   - Use embedded HTML with inline JavaScript
-   - Serve from different endpoint
-   - Use Tauri built-in HTML serving
-
----
-
-## Useful Links
-
-- [Tauri 2 Docs](https://tauri.app/)
-- [Tauri WebView Config](https://tauri.app/reference/config/)
-- [Ghidra MCP](https://github.com/re-lab-tools/ghidra-mcp)
-- [Anchorpoint](https://www.anchorpoint.app/)
 
 ---
 

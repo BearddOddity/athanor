@@ -1,7 +1,7 @@
 //! Assembly and disassembly support
 
 use crate::{
-    AthanorError, FileMetadata, ParsedFile, ParsedNode, ParsedProperty, PropertyValue,
+    AthanorError, ParsedFile, ParsedNode, ParsedProperty, PropertyValue,
     Result,
 };
 use crate::formats::{Format, FormatDetector};

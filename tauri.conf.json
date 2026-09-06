@@ -1,26 +1,58 @@
 {
+  "$schema": "https://tauri.app/v2/schema",
   "productName": "Athanor Engine",
   "version": "0.1.0",
-  "identifier": "athanor",
+  "identifier": "com.athanor.engine",
   "build": {
-    "devUrl": "http://localhost:3459/editor"
+    "devUrl": "http://localhost:3459/editor",
+    "frontendDist": "../xmlb_samples"
   },
   "app": {
     "security": {
-      "csp": "default-src 'self' http://127.0.0.1:*; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://127.0.0.1:*"
+      "csp": "default-src 'self' http://127.0.0.1:* https://localhost:*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* https://localhost:* ipc: tauri:"
     },
     "windows": [
       {
+        "label": "main",
         "title": "Athanor Engine",
         "url": "http://127.0.0.1:3459/editor",
         "width": 1200,
         "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
         "resizable": true,
-        "center": true
+        "center": true,
+        "decorations": true,
+        "transparent": false,
+        "visible": true
       }
-    ]
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": false,
+      "id": "main-tray"
+    }
   },
   "bundle": {
-    "active": false
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    }
+  },
+  "plugins": {
+    "fs": {
+      "scope": {
+        "allow": [
+          "**"
+        ]
+      }
+    }
   }
 }
