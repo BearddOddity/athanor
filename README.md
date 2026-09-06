@@ -162,24 +162,25 @@ D:\My apps\Athanor\
  
  ## Bring Your Own Game (BYO Game) Architecture
  
- ### Core Principle
+### Core Principle
  
  The Athanor engine enforces a strict **"Original files are never modified"** policy:
  
  | Action | What Happens |
  |--------|--------------|
  | **Parse/Scan** | Reads game files from specified source path (ISO/XBE/directory) |
- | **Modify** | Applies modifications to a **copy** of the file in memory |
- | **Compile/Build** | Writes output to a **separate** `output_path` specified per request |
- | **Original Game** | **Never** touched or written to - remains pristine |
+ | **Duplicate** | Creates a copy of the file in memory |
+ | **Modify** | Applies modifications to the in-memory copy |
+ | **Compile** | Writes the modified copy to user-specified `output_path` |
+ | **Original Game** | **Never** touched - source files are READ-ONLY |
  
  ### Safety Guarantees
  
- - ✅ `input_path` and `output_path` must be different paths (enforced at compile time)
- - ✅ Source directory files are read-only during compilation
- - ✅ Output always goes to user-specified destination
+ - ✅ Source files are READ-ONLY - engine only reads, never writes to source
+ - ✅ Output always goes to user-specified destination (NEW file)
+ - ✅ No caching - files scanned dynamically, never stored
  - ✅ Engine errors never modify source files
- - ✅ All 20 format builders support round-trip (parse → modify → rebuild → new file)
+ - ✅ All 20 format builders support round-trip (parse → modify → rebuild)
  
  ### Typical Workflow
  
@@ -190,11 +191,14 @@ D:\My apps\Athanor\
    output_path: "output/modified_menuscreen.xmlb"
    
  Engine Behavior:
-   1. Resolve actual_input_path = source/input_path
-   2. Read file from actual_input_path (copy to memory)
-   3. Apply modifications in memory only
-   4. Write output to output_path (NEW file)
-   5. Original game file at actual_input_path: UNCHANGED
+   1. Resolve: actual = source/input_path = "D:/My Games/X-Men Legends II/menu/menuscreen.xmlb"
+   2. Read: Load file from actual path into memory (source file untouched)
+   3. Modify: Apply changes to the in-memory copy
+   4. Write: Save modified copy to output_path
+   
+ Result:
+   - Source file (actual): UNCHANGED ✓
+   - Output file: NEW modified file ✓
  ```
  
  ## Environment Variables

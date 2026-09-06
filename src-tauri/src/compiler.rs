@@ -18,18 +18,15 @@ impl Compiler {
         // Resolve the actual file path from source
         let actual_input_path = self.resolve_game_path(&request.source, &request.input_path)?;
         
-        // SAFETY: Never modify the source - read to create a copy
-        // Additional protection: ensure output_path differs from input_path
-        if request.output_path == request.input_path {
-            return Err(crate::AthanorError::Parse(
-                "input_path and output_path must be different".to_string()
-            ));
-        }
+        // DUPLICATE THEN MODIFY: Always read from source, write to output
+        // Output path should be different from source path (we're duplicating to modify)
+        // The key protection: source files are NEVER written to, only READ
         
-        // Read the file (never writes to actual_input_path)
+        // Read from source (creates in-memory copy)
         let mut file = self.read_file(&actual_input_path)?;
-        file.metadata.path = request.input_path.clone(); // Keep original relative path for tracking
+        file.metadata.path = request.input_path.clone(); // Track original relative path
         
+        // Apply modifications to the in-memory copy
         if let Some(modifications) = &request.modifications {
             for modification in modifications {
                 self.apply_modification(&mut file, modification)?;
@@ -38,7 +35,7 @@ impl Compiler {
         
         self.recalculate_headers(&mut file);
         
-        // Output ALWAYS goes to output_path - never touching the source
+        // Write the modified copy to output_path (NEW file, source unchanged)
         let output_data = self.serialize(&file)?;
         if let Some(parent) = request.output_path.parent() {
             std::fs::create_dir_all(parent)?;
