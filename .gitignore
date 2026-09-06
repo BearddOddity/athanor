@@ -1,0 +1,40 @@
+# Release builds
+/target/
+Cargo.lock
+
+# Editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+_desktop
+*.tmp
+*.temp
+
+# Rust
+*.rs.bk
+rustfmt.toml.editor/
+**/*.rs.bk
+
+# Build artifacts
+*.pdb
+*.lib
+*.exe
+
+# Anchorpoint
+.anchorpoint/
+
+# Training data
+/training/
+/datasets/
+*.json
+
+# Ghidra analysis
+/projects/
+*.gdt
+*analysis*
+*.fidb
