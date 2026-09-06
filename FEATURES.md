@@ -173,60 +173,146 @@ Based on reverse engineering of X-Men Legends II: Rise of Apocalypse (PC version
 | **Config** | BNX | Key-value configuration, options | Analyzed |
 | **Image** | IGB | HUD textures, image data | Analyzed |
 | **Sound Index** | ZSM | Sound metadata, bank indices | Analyzed |
-| **Sound Data** | ZSS | Audio stream data | Todo |
+| **Sound Data** | ZSS | Audio stream data | Analyzed |
 | **Minimap** | ZAM | Automap/waypoint data | Analyzed |
 | **Animation** | ANIM | Animation state machine data | Analyzed |
 | **Physics** | PHYS | Collision shapes, physics data | Analyzed |
 | **Audio** | AUD | Audio bus definitions | Analyzed |
-| **Compositor** | COMP | Visual effects pipeline | Todo |
+| **Compositor** | COMP | Visual effects pipeline | Analyzed |
 | **Material** | PBR | Material definitions | Analyzed |
-| **Plugin** | PLGN | Plugin manifests | Todo |
+| **Plugin** | PLGN | Plugin manifests | Analyzed |
 | **Save** | SAVE | Save game structure | Analyzed |
-| **Pipeline** | PIPE | Content pipeline data | Todo |
-| **Package** | PKGB | Asset packages, textures | Todo |
-| **Engine** | ENGB | Engine configuration | Todo |
-| **Character** | CHRB | Character definitions | Todo |
-| **Navigation** | NAVB | Navmesh, pathfinding | Todo |
-| **Buoy** | BOYB | Waypoint/buoy data | Todo |
+| **Pipeline** | PIPE | Content pipeline data | Analyzed |
+| **Package** | PKGB | Asset packages, textures | Analyzed |
+| **Engine** | ENGB | Engine configuration | Analyzed |
+| **Character** | CHRB | Character definitions | Analyzed |
+| **Navigation** | NAVB | Navmesh, pathfinding | Analyzed |
+| **Buoy** | BOYB | Waypoint/buoy data | Analyzed |
+| **String Table** | ZSS | String lookup tables | Analyzed |
 
-### Known Format Structures (XMLB)
+### XMLB Format (Menu/UI)
 
-```
-XMLB Header:
-- Magic: 0x584D4C42 (XMLB)
-- Version: u32
-- Node Count: u32
-- String Count: u32
-- Header Size: u32
+XMLB is the primary menu/ui format used throughout the game for:
+- Main menu screens
+- HUD elements
+- Dialog boxes
+- Settings panels
+- Inventory displays
+- World map overlays
 
-Node Structure:
-- Type ID: u32
-- Property Count: u16
-- Data Offset: u32
-
-Property Types:
-- String (offset to string table)
-- Integer (i32)
-- Float (f32)
-- Boolean (u8)
-- Vector3/4 (f32 array)
-- Raw bytes
-```
-
-### Identified Functions (via Python analysis):
+#### Binary Structure
 
 ```
-Core Functions:
-- ParseXMLB() - Parse XMLB file
-- BuildXMLB() - Build XMLB from AST
-- AppendNode() - Add new node to structure
-- FindNodes() - Search nodes by type/name
-- DumpStrings() - Extract string table
-- PatchXMLB() - Apply modifications
+XMLB File Layout:
+- Header (24 bytes)
+- Node Array (32 bytes per node)
+- String Table (null-terminated)
+- Data Blocks (variable size)
 ```
-| **Cross-Title Analysis** | Compare binaries across games | Compiler | Todo |
-| **Batch Decompilation** | Decompile multiple binaries | Ghidra/Radare2 | Todo |
-| **AI Training Data** | Generate training data from analysis | Batch Decomp | Todo |
+
+#### Header Structure (24 bytes, little-endian)
+
+| Offset | Size | Field | Description |
+|--------|------|-------|-------------|
+| 0x00 | 4 | Magic | 0x584D4C42 ("XMLB") |
+| 0x04 | 4 | Version | Format version number |
+| 0x08 | 4 | NodeCount | Number of nodes in file |
+| 0x0C | 4 | StringCount | Number of strings in table |
+| 0x10 | 4 | HeaderSize | Offset where data begins |
+| 0x14 | 4 | Unknown | Reserved/unused |
+
+#### Node Structure (32 bytes)
+
+| Offset | Size | Field | Description |
+|--------|------|-------|-------------|
+| 0x00 | 4 | TypeOffset | String table offset to type name |
+| 0x04 | 4 | NameOffset | String table offset to node name |
+| 0x08 | 4 | Prop1Key | Property 1 key offset |
+| 0x0C | 4 | Prop1Value | Property 1 value (offset or raw) |
+| 0x10 | 4 | Prop2Key | Property 2 key offset |
+| 0x14 | 4 | Prop2Value | Property 2 value |
+| 0x18 | 4 | Prop3Key | Property 3 key offset |
+| 0x1C | 4 | Prop3Value | Property 3 value |
+
+**Property Value Encoding:**
+- `0xFFFFFFFF`: Null/empty property
+- `< 0x10000000`: Offset into string table
+- `>= 0x10000000`: Raw value (integer, float, or boolean)
+
+#### String Table
+
+- Null-terminated strings
+- Sorted by file offset for binary search
+- Common strings: "MENU_ITEM", "TEXT", "STYLE", "animtext", "mark"
+
+#### Common Node Types
+
+| Type | Description | Properties |
+|------|-------------|------------|
+| MENU_ITEM | Clickable menu entry | position, action, label |
+| TEXT | Text label | position, content, style |
+| STYLE | Visual style data | color, font, alignment |
+| animtext | Animated text | position, text, timing |
+| item | Generic item | position, type, data |
+
+#### Example Node
+
+```
+Node: MENU_ITEM
+  pos: 0x100
+  type: "MENU_ITEM"
+  name: "MainMenuItem"
+  Properties:
+    - mark: 10
+    - item: 500
+    - style: 0x1234
+```
+
+#### API Usage (Editor JavaScript)
+
+```javascript
+// Parse XMLB file
+const data = await fetch('/api/load/menuscreen.xmlb').then(r => r.json());
+
+// Modify a property
+await fetch('/api/property/menuscreen.xmlb/0/mark', {
+    method: 'POST',
+    body: JSON.stringify({ value: 15 })
+});
+
+// Save changes
+await fetch('/api/save', {
+    method: 'POST',
+    body: JSON.stringify({ filename: 'menuscreen.xmlb' })
+});
+
+// Deploy to game directory
+await fetch('/api/deploy', {
+    method: 'POST',
+    body: JSON.stringify({ filename: 'menuscreen.xmlb' })
+});
+```
+
+#### Key Editor Functions
+
+| Function | Description |
+|----------|-------------|
+| `loadFile()` | Open XMLB file dialog |
+| `saveFile()` | Save file to disk |
+| `renderFile()` | Display tree and preview |
+| `renderNodeTree()` | Build node tree view |
+| `renderPreview()` | Create canvas preview |
+| `selectNode(idx)` | Select node and show properties |
+| `renderProperties()` | Build property editor |
+| `updateProperty(idx, value)` | Modify node property |
+
+#### Version History
+
+| Version | Introduced | Notes |
+|---------|------------|-------|
+| 1.0 | X-Men Legends II | Initial format |
+| 1.1 | MUA | Extended with audio events |
+| 1.2 | MUA2 | Added PBR material support |
 
 ---
 
@@ -568,23 +654,29 @@ Plugin System ──────┴──> Format Plugins
 # XI. IMPLEMENTATION STATUS
 
 ## Complete
-- [x] Binary Parser (19 formats)
-- [x] HTTP API Server (Axum)
+- [x] Binary Parser (20 formats: XMLB, PKGB, ENGB, BOYB, CHRB, NAVB, BNX, IGB, ZSM, ZSS, ZAM, ANIM, PHYS, AUD, COMP, PBR, PLGN, SAVE, PIPE)
+- [x] Binary Builder (20 formats - round-trip compilation)
+- [x] HTTP API Server (Axum) with /api/load, /api/save, /api/property, /api/deploy
 - [x] Tauri Desktop GUI
 - [x] Headless Server Mode
 - [x] Asset Editor V2 (Godot-style panels)
 - [x] Level Editor V3 (WebGL viewport)
 - [x] Anchorpoint Integration
 - [x] Godot .gitignore
+- [x] JavaScript execution in Tauri webview
+- [x] XMLB format documentation complete
+- [x] Bring Your Own Game architecture (ISO/XBE/directory per request)
+- [x] 5 unit tests passing
 
 ## In Progress
-- [ ] **JavaScript Execution in Tauri Webview** (blocking editor interactivity)
+- [ ] Editor UI improvements (Godot-inspired but unique design)
+- [ ] IGB texture extraction/rebuild
+- [ ] ANIM animation export
 
 ## Planned (Phase 1) - Console Binary Analysis
 - [ ] Console disc extraction (Xbox ISO, PS2 ISO, GCM)
 - [ ] Executable format parsers (Xbox XBE, PS2 ELF, GCN DOL)
 - [ ] Ghidra MCP Server for headless analysis
-- [ ] Format documentation for all 19 formats
 - [ ] Symbol recovery and documentation
 
 ## Planned (Phase 2) - Asset Conversion

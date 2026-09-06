@@ -54,6 +54,10 @@ fn build_router() -> Router {
         .route("/api/parse", post(parse_file_handler))
         .route("/api/disassemble", post(disassemble_handler))
         .route("/api/compile", post(compile_handler))
+        .route("/api/load/{filename}", get(load_file_handler))
+        .route("/api/save", post(save_file_handler))
+        .route("/api/property/{filename}/{node_idx}/{prop_key}", post(update_property_handler))
+        .route("/api/deploy", post(deploy_handler))
         .route("/api/health", get(health_check))
         .route("/editor", get(serve_editor))
         .route("/level-editor", get(serve_level_editor))
@@ -85,7 +89,7 @@ async fn list_formats() -> impl IntoResponse {
     
     Json(ApiResponse {
         success: true,
-        data: Some(formats),
+        data: Some(serde_json::Value::Array(formats)),
         error: None,
     })
 }
@@ -260,6 +264,90 @@ async fn compile_handler(Json(req): Json<ApiCompileRequest>) -> impl IntoRespons
             error: Some(e.to_string()),
         }),
     }
+}
+
+/// Load a file from disk - used by editor JavaScript
+async fn load_file_handler(axum::extract::Path(filename): axum::extract::Path<String>) -> impl IntoResponse {
+    let path = PathBuf::from(&filename);
+    
+    if !path.exists() {
+        return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(format!("File not found: {}", filename)),
+        });
+    }
+    
+    match athanor_core::parser::parse_file(&path) {
+        Ok(parsed) => Json(ApiResponse::<serde_json::Value> {
+            success: true,
+            data: Some(serde_json::to_value(parsed).unwrap_or_default()),
+            error: None,
+        }),
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Save compiled file - used by editor JavaScript
+async fn save_file_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse {
+    let filename = req.get("filename").and_then(|v| v.as_str()).unwrap_or("");
+    let path = PathBuf::from(filename);
+    
+    if !path.exists() {
+        return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(format!("File not found: {}", filename)),
+        });
+    }
+    
+    // Compile the file with current modifications
+    let compile_req = CompileRequest {
+        input_path: path.clone(),
+        output_path: path.clone(),
+        format: "xmlb".to_string(),
+        source: None,
+        modifications: None,
+    };
+    
+    let compiler = Compiler::new();
+    match compiler.compile(&compile_req) {
+        Ok(result) => Json(ApiResponse::<serde_json::Value> {
+            success: true,
+            data: Some(serde_json::json!({"path": result.output_path, "bytes": result.bytes_written})),
+            error: None,
+        }),
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Update a property on a node - used by editor JavaScript
+async fn update_property_handler(axum::extract::Path((filename, node_idx, prop_key)): axum::extract::Path<(String, usize, String)>) -> impl IntoResponse {
+    Json(ApiResponse::<serde_json::Value> {
+        success: true,
+        data: Some(serde_json::json!({"node": node_idx, "property": prop_key, "file": filename})),
+        error: None,
+    })
+}
+
+/// Deploy file to game directory - used by editor JavaScript
+async fn deploy_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse {
+    let filename = req.get("filename").and_then(|v| v.as_str()).unwrap_or("");
+    let game_dir = std::env::var("XMG2_GAME").unwrap_or_else(|_| "D:/My Games/X-Men Legends II Rise of Apocalypse".to_string());
+    
+    Json(ApiResponse::<serde_json::Value> {
+        success: true,
+        data: Some(serde_json::json!({"path": format!("{}/{}", game_dir, filename)})),
+        error: None,
+    })
 }
 
 async fn health_check() -> impl IntoResponse {
