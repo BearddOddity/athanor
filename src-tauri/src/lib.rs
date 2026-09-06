@@ -117,6 +117,7 @@ pub mod formats;
 pub mod parser;
 pub mod builder;
 pub mod compiler;
+pub mod dxt;
 pub mod anchorpoint_integration;
 
 // Re-exports

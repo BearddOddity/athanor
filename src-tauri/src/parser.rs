@@ -1,11 +1,26 @@
 //! Assembly and disassembly support
 
+use serde::{Deserialize, Serialize};
 use crate::{
     AthanorError, ParsedFile, ParsedNode, ParsedProperty, PropertyValue,
     Result,
 };
+use crate::dxt::{decompress, DxtFormat};
 use crate::formats::{Format, FormatDetector};
 use std::path::Path;
+use std::collections::HashMap;
+
+/// IGB Texture metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IgbTexture {
+    pub name: String,
+    pub width: u32,
+    pub height: u32,
+    pub format: String, // DXT1 or DXT5
+    pub data_offset: u32,
+    pub data_size: u32,
+    pub raw_data: Vec<u8>,
+}
 
 /// Disassemble an Athanor binary format into structured nodes
 pub fn disassemble(path: &Path) -> Result<ParsedFile> {
@@ -166,6 +181,8 @@ fn parse_bnx(data: &[u8], strings: &mut std::collections::HashMap<u32, String>) 
 
 fn parse_igb(data: &[u8], strings: &mut std::collections::HashMap<u32, String>) -> Vec<ParsedNode> {
     let mut nodes = Vec::new();
+    
+    // Extract strings as before (for texture names, etc)
     let mut i = 0;
     while i < data.len() {
         if data[i] >= 0x20 && data[i] < 0x7F {
@@ -187,8 +204,51 @@ fn parse_igb(data: &[u8], strings: &mut std::collections::HashMap<u32, String>) 
             i += 1;
         }
     }
+    
+    // Parse IGB texture header if present
+    if data.len() >= 16 && data[0] == 0xA4 && data[1] == 0x02 {
+        let texture_count = u32::from_le_bytes([data[4], data[5], data[6], data[7]]) as usize;
+        let width = u16::from_le_bytes([data[8], data[9]]) as u32;
+        let height = u16::from_le_bytes([data[10], data[11]]) as u32;
+        let format_tag = u32::from_le_bytes([data[12], data[13], data[14], data[15]]);
+        
+        // This would be for extracting actual texture data
+        // For now, just add a metadata node
+        nodes.push(ParsedNode {
+            index: nodes.len(),
+            file_offset: 0,
+            node_type: Some("IGB_HEADER".to_string()),
+            name: Some("IGB Texture Container".to_string()),
+            properties: vec![
+                ParsedProperty {
+                    key: Some("width".to_string()),
+                    value: PropertyValue::Integer(width as i64),
+                    is_raw: true,
+                },
+                ParsedProperty {
+                    key: Some("height".to_string()),
+                    value: PropertyValue::Integer(height as i64),
+                    is_raw: true,
+                },
+                ParsedProperty {
+                    key: Some("texture_count".to_string()),
+                    value: PropertyValue::Integer(texture_count as i64),
+                    is_raw: true,
+                },
+                ParsedProperty {
+                    key: Some("format".to_string()),
+                    value: PropertyValue::String(format_tag.to_string()),
+                    is_raw: false,
+                },
+            ],
+            raw_bytes: data[0..16.min(data.len())].to_vec(),
+        });
+    }
+    
     nodes
 }
+
+/// Extract IGB textures and convert to PNG
 
 fn parse_zsm(data: &[u8]) -> Vec<ParsedNode> {
     let mut nodes = Vec::new();
