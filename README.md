@@ -1,115 +1,205 @@
-# Athanor
+# Athanor Engine
 
 **Full-stack binary assembly, disassembly, and compilation engine for game formats**
 
-Athanor (recreated from Alchemy Engine) is a high-performance Rust backend + Bun frontend system for parsing, modifying, and recompiling Xbox and PC game binary formats. Designed for the X-Men Legends II Rise of Apocalypse modding community.
+Athanor (recreated from Alchemy Engine) is a Rust-based system for parsing, modifying, and recompiling game binary formats. Designed for the X-Men Legends II Rise of Apocalypse modding community with the goal of enabling console game decompilation and PC porting.
 
-## Features
+## Primary Goals
 
-- **19+ Binary Formats**: XMLB, PKGB, ENGB, CHRB, NAVB, BOYB, BNX, IGB, ZSM, ZSS, ZAM, ANIM, PHYS, AUD, COMP, PBR, PLGN, SAVE, PIPE
-- **Full Assembly/Disassembly**: Parse binary → modify nodes → compile/repack
-- **Axum HTTP Server**: REST API for file parsing, disassembly, and compilation
-- **Bun Frontend**: Modern web editor at `/editor` endpoint
-- **Ghidra MCP Integration**: Headless binary analysis via 37-tool Ghidra MCP server
-- **Anchorpoint.app Integration**: Git-based version control for binary game assets
-- **Cross-Title Analysis**: Function ID (FID) databases for identifying shared engine code
-- **Batch AI Training**: Extract decompiled functions with context for ML model training
+1. **Modding Support**: Modify X-Men Legends II and sibling titles (MUA 1, MUA 2)
+2. **Console Decompilation**: Decompile console-exclusive shelved games
+3. **PC Recompilation**: Recompile for modern PC with enhancements
 
-## Architecture
+## Target Games
 
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Bun Server    │────▶│  Axum HTTP API   │────▶│  Rust Backend   │
-│   Port 3457     │     │  Port 3459       │     │  athanor-core   │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-       │                        │                        │
-       ▼                        ▼                        ▼
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  /editor UI     │     │  /api/parse      │     │  Ghidra MCP     │
-│  /api/formats   │     │  /api/compile    │     │  Anchorpoint    │
-│  /api/files     │     │  /api/disassemble│     │  Batch Training │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-```
+| Game | Status |
+|------|--------|
+| X-Men Legends II: Rise of Apocalypse | Primary target - formats analyzed |
+| Marvel: Ultimate Alliance | Similar formats - future |
+| Marvel: Ultimate Alliance 2 | Similar formats - future |
+| X-Men Legends (Xbox) | Console-only, planned for PC port |
 
 ## Quick Start
 
 ### Build
 
 ```bash
-cd athanor-core
+cd D:\My apps\Athanor
 cargo build --release
 ```
 
-### Run Server
+### Run
 
 ```bash
-# Start Rust backend (port 3459)
-cd athanor-core && ./target/release/athanor
+# Headless mode (for AI integration)
+.\target\release\athanor.exe
 
-# Start Bun server (port 3457)
-cd ../xmlb_samples && bun run alchemy_server.ts
+# GUI mode (with Tauri window)
+.\target\release\athanor.exe --gui
+
+# Help
+.\target\release\athanor.exe --help
 ```
 
 ### Web Editor
 
-Open `http://localhost:3457/editor` in your browser.
+Open browser to `http://127.0.0.1:3459/editor` or use the Tauri GUI window.
 
-## API Endpoints
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         ATHANOR ENGINE                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────┐ │
+│  │  TAURI GUI     │  │  HTTP SERVER   │  │  BINARY CORE          │ │
+│  │  Desktop App   │  │  Port 3459     │  │  19 Formats            │ │
+│  │  (WebView)    │  │  (Axum)       │  │  Parser/Compiler      │ │
+│  └────────────────┘  └────────────────┘  └────────────────────────┘ │
+│                                                                      │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────┐ │
+│  │  EDITOR UI     │  │  AI CORE      │  │  GAME DATA            │ │
+│  │  V2 + V3      │  │  Ghidra MCP   │  │  xmlb_samples/        │ │
+│  │  WebGL 3D     │  │  Analysis     │  │  X-Men Legends II     │ │
+│  └────────────────┘  └────────────────┘  └────────────────────────┘ │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+## Features
+
+### Binary Format Support (19 formats)
+
+| Format | Extension | Description | Status |
+|--------|-----------|-------------|--------|
+| XMLB | Menu/UI | Menu layouts, settings | Analyzed |
+| BNX | Config | Key-value configuration | Analyzed |
+| IGB | Image | HUD textures, image data | Analyzed |
+| ZSM | Sound Index | Sound metadata, bank indices | Analyzed |
+| ZAM | Minimap | Automap/waypoint data | Analyzed |
+| ANIM | Animation | Animation state machine | Analyzed |
+| PHYS | Physics | Collision shapes, physics data | Analyzed |
+| AUD | Audio | Audio bus definitions | Analyzed |
+| PBR | Material | Material definitions | Analyzed |
+| SAVE | Save | Save game structure | Analyzed |
+| + 9 more | Various | See FEATURES.md | Various |
+
+### Editor Interfaces
+
+- **Asset Editor (V2)**: Godot-style 3-panel layout
+  - Scene tree browser
+  - AST tree view
+  - Hex view
+  - Property inspector
+
+- **Level Editor (V3)**: WebGL-based 3D viewport
+  - Object hierarchy
+  - Transform tools
+  - Camera controls
+
+### API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/formats` | List supported formats |
-| GET | `/api/files` | List game files |
+| GET | `/api/formats` | List 19 supported formats |
+| GET | `/api/files` | List game directory files |
 | POST | `/api/parse` | Parse binary file |
-| POST | `/api/disassemble` | Disassemble binary |
+| POST | `/api/disassemble` | Disassemble to readable AST |
 | POST | `/api/compile` | Compile with modifications |
 | GET | `/api/health` | Health check |
+| GET | `/editor` | Asset editor UI |
+| GET | `/level-editor` | Level editor UI |
 
-## Supported Formats
+### Integrations
 
-| Extension | Name | Description |
-|-----------|------|-------------|
-| `.xmlb` | XMLB | Menu/UI layouts, settings |
-| `.pkgb` | PKGB | Asset packages, textures |
-| `.engb` | ENGB | Conversation/scripts |
-| `.chrb` | CHRB | Character definitions |
-| `.navb` | NAVB | Pathfinding/navmesh |
-| `.boyb` | BOYB | Buoy/waypoint data |
-| `.bnx` | BNX | Config/options key=value |
-| `.igb` | IGB | HUD/texture images |
-| `.zsm` | ZSM | Sound metadata/index |
-| `.zss` | ZSS | Sound data streams |
-| `.zam` | ZAM | Minimap/automap data |
-| `.anim` | ANIM | Animation State Machine |
-| `.phys` | PHYS | Physics Colliders |
-| `.bus` | AUD | Audio Bus Definitions |
-| `.comp` | COMP | Compositor Effects |
-| `.pbr` | PBR | PBR Material Definitions |
-| `.plgn` | PLGN | Plugin Manifests |
-| `.save` | SAVE | Save Game Structure |
-| `.pipe` | PIPE | Content Pipeline |
+- **Anchorpoint.app**: Git-based version control for binary assets
+- **Ghidra MCP**: Headless binary analysis via 37-tool MCP server
+- **Godot .gitignore**: Compatible with game engine version control
 
-## Anchorpoint Integration
+## File Structure
 
-Athanor integrates with Anchorpoint.app for Git-based version control of binary game assets:
+```
+D:\My apps\Athanor\
+├── src-tauri/           # Tauri + Axum application
+│   ├── main.rs         # Entry point, CLI args, GUI/headless modes
+│   ├── src/            # Core library
+│   │   ├── lib.rs      # Library root
+│   │   ├── parser.rs   # Binary format parsers
+│   │   ├── compiler.rs  # Compilation engine
+│   │   ├── formats.rs  # Format definitions
+│   │   ├── builder.rs  # Binary builder
+│   │   └── anchorpoint_integration.rs
+│   ├── Cargo.toml
+│   └── tauri.conf.json # Tauri configuration
+├── xmlb_samples/       # Editor HTML + game data samples
+│   ├── alchemy_editor_v2.html  # Asset editor
+│   ├── alchemy_editor_v3.html  # Level editor
+│   └── *.XMLB, *.BNX   # Sample game files
+├── icons/              # App icons
+├── build.rs            # Tauri build script
+├── Cargo.toml          # Workspace manifest
+├── tauri.conf.json    # Tauri config (root)
+├── FEATURES.md         # Full feature documentation
+└── README.md           # This file
+```
 
-- **File Locking**: Prevent merge conflicts on binary files
-- **Asset Metadata**: Tags, descriptions, review status
-- **Review Workflow**: Submit for review, approval process
-- **Git LFS**: Automatic large file storage configuration
-- **Sparse Checkout**: Work with TB-sized repositories
+## Environment Variables
 
-## Ghidra MCP Integration
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ATHANOR_PORT` | 3459 | HTTP server port |
+| `XMG2_GAME` | `D:\My Games\X-Men Legends II Rise of Apocalypse` | Game directory |
 
-Connects to the re-lab-tools Ghidra MCP server for headless binary analysis:
+## Console Porting Workflow
 
-- **37 Tools**: Full Ghidra MCP toolset
-- **Xbox/XBE Analysis**: Specialized scripts for Xbox binaries
-- **Symbol Database**: Apply XbSymbolDatabase signatures
-- **Function ID**: Cross-title function matching
-- **RTTI Analysis**: Walk MSVC RTTI for vtables
-- **Batch Decompilation**: AI training data extraction
+```
+1. EXTRACT   - Console Disc → Mount → Extract All Files
+2. ANALYZE   - Binary Formats → Ghidra/Radare2 → Document Structures
+3. DECOMPILE - Console EXE → Decompiled Code → Symbol Tables
+4. CONVERT   - Console Textures → PC Formats → Rebuild Bundles
+5. RECOMPILE  - Modified Code → PC EXE → Link with Engine
+6. ENHANCE   - Widescreen → 60 FPS → Controller → Achievements
+7. DISTRIBUTE - Build → Package → Mod Loader Ready
+```
+
+## Development
+
+### Building
+
+```bash
+# Debug build
+cargo build
+
+# Release build
+cargo build --release
+
+# Build with Tauri
+cargo build --release --manifest-path Cargo.toml
+```
+
+### Current Issues
+
+- [ ] JavaScript execution in Tauri webview not working (blocking editor interactivity)
+- [ ] System tray not fully wired
+
+### Known Working
+
+- [x] HTTP API server
+- [x] Binary parsing (19 formats)
+- [x] Editor HTML serving
+- [x] Headless mode
+- [x] GUI mode (window opens, UI renders)
+
+## Contributing
+
+See FEATURES.md for full feature roadmap and system architecture.
 
 ## License
 
 MIT
+
+## Links
+
+- [Repository](https://github.com/BearddOddity/athanor)
+- [Features](FEATURES.md)

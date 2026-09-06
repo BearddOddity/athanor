@@ -71,3 +71,6 @@ ENGB
 CHRB
 NAVB
 BOYB
+
+# Exception: Tauri config must be in repo
+!tauri.conf.json
