@@ -18,21 +18,21 @@ thiserror = "1"
 bytes = "1"
 futures = "0.3"
 chrono = "0.4"
-tauri = { version = "2", features = ["tray-icon", "devtools"] }
+tauri = { version = "2", features = ["api-all"] }
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
 
 [lib]
-name = "athanor_core"
-path = "src-tauri/src/lib.rs"
+name = "athanor"
+path = "lib.rs"
 
 [[bin]]
 name = "athanor"
-path = "src-tauri/main.rs"
+path = "main.rs"
 
 [build-dependencies]
-tauri-build = { version = "2" }
+tauri-build = { version = "2", features = ["api-all"] }
 
 [profile.release]
 opt-level = 3
