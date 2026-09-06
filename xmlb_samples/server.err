@@ -1,0 +1,60 @@
+Error loading options.XMLB: 56 |     xmlb.strtabOff = xmlb.readUint32(8);
+57 |     xmlb.unk1 = xmlb.readUint32(12);
+58 |     xmlb.strCount = xmlb.readUint32(16);
+59 |     xmlb.unk2 = xmlb.readUint32(20);
+60 |     if (xmlb.magic !== MAGIC) {
+61 |       throw new Error(`Invalid magic: 0x${xmlb.magic.toString(16)} (expected 0x11B1)`);
+                     ^
+error: Invalid magic: 0x0 (expected 0x11B1)
+      at load (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:61:17)
+      at getXMLB (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:173:27)
+      at fetch (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:222:22)
+
+Error loading options.XMLB: 56 |     xmlb.strtabOff = xmlb.readUint32(8);
+57 |     xmlb.unk1 = xmlb.readUint32(12);
+58 |     xmlb.strCount = xmlb.readUint32(16);
+59 |     xmlb.unk2 = xmlb.readUint32(20);
+60 |     if (xmlb.magic !== MAGIC) {
+61 |       throw new Error(`Invalid magic: 0x${xmlb.magic.toString(16)} (expected 0x11B1)`);
+                     ^
+error: Invalid magic: 0x0 (expected 0x11B1)
+      at load (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:61:17)
+      at getXMLB (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:173:27)
+      at fetch (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:222:22)
+
+Error loading options.XMLB: 56 |     xmlb.strtabOff = xmlb.readUint32(8);
+57 |     xmlb.unk1 = xmlb.readUint32(12);
+58 |     xmlb.strCount = xmlb.readUint32(16);
+59 |     xmlb.unk2 = xmlb.readUint32(20);
+60 |     if (xmlb.magic !== MAGIC) {
+61 |       throw new Error(`Invalid magic: 0x${xmlb.magic.toString(16)} (expected 0x11B1)`);
+                     ^
+error: Invalid magic: 0x0 (expected 0x11B1)
+      at load (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:61:17)
+      at getXMLB (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:173:27)
+      at fetch (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:222:22)
+
+Error loading game_options.XMLB: 56 |     xmlb.strtabOff = xmlb.readUint32(8);
+57 |     xmlb.unk1 = xmlb.readUint32(12);
+58 |     xmlb.strCount = xmlb.readUint32(16);
+59 |     xmlb.unk2 = xmlb.readUint32(20);
+60 |     if (xmlb.magic !== MAGIC) {
+61 |       throw new Error(`Invalid magic: 0x${xmlb.magic.toString(16)} (expected 0x11B1)`);
+                     ^
+error: Invalid magic: 0x0 (expected 0x11B1)
+      at load (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:61:17)
+      at getXMLB (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:173:27)
+      at fetch (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:222:22)
+
+Error loading game_options.XMLB: 56 |     xmlb.strtabOff = xmlb.readUint32(8);
+57 |     xmlb.unk1 = xmlb.readUint32(12);
+58 |     xmlb.strCount = xmlb.readUint32(16);
+59 |     xmlb.unk2 = xmlb.readUint32(20);
+60 |     if (xmlb.magic !== MAGIC) {
+61 |       throw new Error(`Invalid magic: 0x${xmlb.magic.toString(16)} (expected 0x11B1)`);
+                     ^
+error: Invalid magic: 0x0 (expected 0x11B1)
+      at load (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:61:17)
+      at getXMLB (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:173:27)
+      at fetch (D:\re-lab-share\xmen2_mod\xmlb_samples\xmlb_server.ts:222:22)
+

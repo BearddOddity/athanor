@@ -1,0 +1,140 @@
+animonclose
+animonopen
+desctext1
+$MENU_BACK Back
+desctext2
+$MENU_ACCEPT Change
+fullscreen
+x2m_options
+no_stack
+OPTIONS_MENU
+updownonly
+animtext
+ui/models/m_track
+MENU_ITEM_MODEL
+ui/models/m_team_helpbar
+ui/models/m_team_corner_hinge
+helpbar_hinge_left
+helpbar_hinge_right
+animtext_scene
+STYLE_TITLE_MED
+desctext3
+desctext4
+desctext5
+title_bracket_top
+ui/models/m_team_side_hinge
+controls_hinge01
+controls_hinge02
+options_bracket_top
+ui/models/m_pda_option_screen
+ui/models/m_pda_option_light_on
+title_light
+ui/models/m_pda_option_focus
+title_focus
+ui/models/m_options_controls_screen
+controls_screen
+ui/models/m_options_controls_ps2
+controls
+ui/models/m_share_tab_light_off
+controls_light
+ui/models/m_share_tab_light_on
+controls_focus
+ui/models/m_options_screen
+options_screen
+ui/models/m_pda_option_light_off
+accept_light
+ui/models/m_pda_option_nofocus
+accept_focus
+ui/models/m_invis
+view_angle_focus
+view_cycle_focus
+view_follow_focus
+view_shake_focus
+subtitles_focus
+options_fxvol_focus
+options_musicvol_focus
+options_combatmusic_focus
+options_vibration_focus
+label_options
+textalignx
+TEXT_ALIGN_LEFT
+label_controls
+Controls
+$DPAD_UP Change
+label_music_volume
+setdecrement sfxvolume
+label_effects_volume
+rightcmd
+setincrement sfxvolume
+startactive
+STYLE_MENU_WHITE_MED
+Effects Volume
+label_accept
+ui/models/m_options_sound_select
+label_combat_music
+setdecrement musicvolume
+setincrement musicvolume
+Music Volume
+label_view_angle
+Combat Music
+setincrement music
+combat_music
+ui/models/m_options_combatmusic_select
+label_view_cycle
+View Angle
+setincrement view_angle
+view_angle
+ui/models/m_options_view_select
+label_view_follow
+View Cycle
+setincrement view_cycle
+view_cycle
+label_view_shake
+View Follow
+setincrement view_follow
+view_follow
+label_subtitles
+View Shake
+setincrement view_shake
+view_shake
+label_vibration
+Subtitles
+setincrement subtitles
+subtitles
+Vibration
+setincrement vibration
+vibration
+$MENU_ACCEPT Save
+TEXT_ALIGN_CENTER_X
+saveoptions
+sfxvolume
+parallelogram
+MENU_ITEM_BAR
+musicvolume
+music_vol
+STYLE_BODY_MED
+TEXT_ALIGN_RIGHT
+MENU_ITEM_BINARY
+MENU_ITEM_TEXT
+label_button01
+label_button02
+label_button03
+label_button04
+label_button05
+label_button06
+label_button07
+label_button08
+label_button09
+label_button10
+label_button11
+label_button12
+label_stick01
+Character
+label_stick02
+label_click01
+Movement
+label_click02
+Map Toggle
+controls_list
+MENU_ITEM_LISTBOX
+controls_list2

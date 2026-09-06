@@ -40,6 +40,7 @@ fn build_router() -> Router {
         .route("/api/health", get(health_check))
         .route("/editor", get(serve_editor))
         .route("/level-editor", get(serve_level_editor))
+        .route("/*path", get(serve_static))
 }
 
 async fn list_formats() -> impl IntoResponse {
@@ -167,7 +168,7 @@ async fn health_check() -> impl IntoResponse {
 }
 
 async fn serve_editor() -> impl IntoResponse {
-    let html = "<!DOCTYPE html><html><head><title>Athanor Editor</title></head><body><h1>Athanor Editor</h1><p>Editor UI loading...</p></body></html>";
+    let html = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/xmlb_samples/alchemy_editor_v2.html"));
     (
         [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
         axum::body::Body::from(html),
@@ -175,11 +176,34 @@ async fn serve_editor() -> impl IntoResponse {
 }
 
 async fn serve_level_editor() -> impl IntoResponse {
-    let html = "<!DOCTYPE html><html><head><title>Level Editor</title></head><body><h1>Athanor Level Editor</h1><p>Level editor loading...</p></body></html>";
+    let html = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/xmlb_samples/alchemy_editor_v3.html"));
     (
         [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
         axum::body::Body::from(html),
     )
+}
+
+async fn serve_static(path: String) -> impl IntoResponse {
+    let full_path = format!("../xmlb_samples/{}", path);
+    match tokio::fs::read(&full_path).await {
+        Ok(bytes) => {
+            let content_type = if path.ends_with(".js") {
+                "application/javascript"
+            } else if path.ends_with(".css") {
+                "text/css"
+            } else {
+                "application/octet-stream"
+            };
+            (
+                [(axum::http::header::CONTENT_TYPE, content_type)],
+                axum::body::Body::from(bytes),
+            )
+        }
+        Err(_) => (
+            [(axum::http::header::CONTENT_TYPE, "text/plain")],
+            axum::body::Body::from("Not found"),
+        ),
+    }
 }
 
 #[tokio::main]

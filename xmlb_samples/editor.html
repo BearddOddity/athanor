@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>X-Men Legends II XMLB Editor</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            margin: 0; 
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app {
+            display: grid;
+            grid-template-rows: 48px 1fr 32px;
+            height: 100vh;
+        }
+        .topbar {
+            background: #2d2d2d;
+            border-bottom: 1px solid #3e3e3e;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+        }
+        .topbar h1 {
+            font-size: 14px;
+            margin: 0;
+            font-weight: 600;
+            color: #569cd6;
+        }
+        .topbar .file-info {
+            font-size: 12px;
+            color: #858585;
+            margin-left: 16px;
+        }
+        .main {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            overflow: hidden;
+        }
+        .panel {
+            background: #252526;
+            border-right: 1px solid #3e3e3e;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .panel:last-child {
+            border-right: none;
+            border-left: 1px solid #3e3e3e;
+        }
+        .panel-header {
+            padding: 8px 12px;
+            background: #2d2d2d;
+            border-bottom: 1px solid #3e3e3e;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #cccccc;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-body {
+            flex: 1;
+            overflow: auto;
+            padding: 8px;
+        }
+        .canvas-area {
+            background: #1e1e1e;
+            position: relative;
+            overflow: hidden;
+        }
+        .canvas-toolbar {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            gap: 4px;
+            background: rgba(45, 45, 45, 0.95);
+            padding: 4px;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .preview-canvas {
+            background: #2d4a2d;
+            border: 1px solid #569cd6;
+            position: relative;
+            transform-origin: center;
+        }
+        .widget {
+            position: absolute;
+            border: 1px solid transparent;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d4d4d4;
+            font-size: 10px;
+            user-select: none;
+        }
+        .widget:hover {
+            border-color: #569cd6;
+        }
+        .widget.selected {
+            border-color: #f1fa8c;
+            background: rgba(241, 250, 140, 0.1);
+        }
+        .widget.text { background: rgba(86, 156, 214, 0.2); }
+        .widget.style { background: rgba(197, 134, 192, 0.2); }
+        .widget.alpha { background: rgba(229, 192, 123, 0.2); }
+        .widget.time { background: rgba(152, 195, 121, 0.2); }
+        .widget.menu_item { background: rgba(86, 156, 214, 0.3); border: 1px solid #569cd6; }
+        .widget.animtext { background: rgba(229, 192, 123, 0.2); }
+        .widget.animtext_scene { background: rgba(197, 134, 192, 0.2); }
+        .widget.type_marker { background: rgba(152, 195, 121, 0.2); }
+        .widget.name_marker { background: rgba(229, 192, 123, 0.2); }
+        .widget.item { background: rgba(86, 156, 214, 0.2); }
+        .widget.model { background: rgba(197, 134, 192, 0.2); }
+        .widget.mark { background: rgba(241, 250, 140, 0.2); }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        button:hover { background: #1177bb; }
+        button:disabled { background: #3e3e3e; color: #858585; cursor: not-allowed; }
+        button.toolbar-btn {
+            background: transparent;
+            color: #cccccc;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+        button.toolbar-btn:hover { background: #3e3e3e; }
+        button.toolbar-btn.active { background: #094771; color: #ffffff; }
+        select, input[type="text"], input[type="number"] {
+            background: #3c3c3c;
+            color: #d4d4d4;
+            border: 1px solid #3e3e3e;
+            padding: 4px 8px;
+            font-size: 12px;
+            width: 100%;
+        }
+        .node-tree-item {
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .node-tree-item:hover { background: #2a2d2e; }
+        .node-tree-item.selected { background: #094771; }
+        .node-tree-item .index {
+            color: #858585;
+            font-size: 10px;
+            min-width: 24px;
+        }
+        .node-tree-item .type {
+            color: #569cd6;
+        }
+        .node-tree-item .name {
+            color: #d4d4d4;
+            flex: 1;
+        }
+        .prop-row {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 8px;
+            margin-bottom: 6px;
+            align-items: center;
+            font-size: 12px;
+        }
+        .prop-row .key {
+            color: #9cdcfe;
+            font-family: 'Consolas', monospace;
+        }
+        .prop-row .value {
+            font-family: 'Consolas', monospace;
+        }
+        .statusbar {
+            background: #007acc;
+            color: white;
+            padding: 6px 16px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #858585;
+            font-size: 13px;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            opacity: 0.3;
+        }
+        .stat { font-size: 11px; }
+        .stat span { color: #d4d4d4; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="topbar">
+            <h1>X-Men Legends II XMLB Editor</h1>
+            <span class="file-info" id="fileInfo">No file loaded</span>
+            <div style="flex: 1"></div>
+            <button onclick="loadFile()">Load XMLB</button>
+            <button onclick="saveFile()" id="saveBtn" disabled>Save</button>
+            <button onclick="deployToGame()" id="deployBtn" disabled>Deploy</button>
+        </div>
+        
+        <div class="main">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Node Tree</span>
+                    <span id="nodeCount">0</span>
+                </div>
+                <div class="panel-body" id="nodeTree">
+                    <div class="empty-state">
+                        <div class="icon">[ ]</div>
+                        <div>No XMLB loaded</div>
+                        <button onclick="loadFile()">Load XMLB File</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel canvas-area">
+                <div class="canvas-toolbar">
+                    <button class="toolbar-btn active" id="aspectBtn" onclick="toggleAspect()">4:3</button>
+                    <button class="toolbar-btn" onclick="zoomIn()">+</button>
+                    <button class="toolbar-btn" onclick="zoomOut()">-</button>
+                    <button class="toolbar-btn" onclick="resetView()">Reset</button>
+                </div>
+                <div class="canvas-container">
+                    <div class="preview-canvas" id="previewCanvas" style="width: 1024px; height: 768px;">
+                        <div class="empty-state">
+                            <div class="icon">_</div>
+                            <div>Load an XMLB file to preview</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Properties</span>
+                </div>
+                <div class="panel-body" id="properties">
+                    <div class="empty-state">
+                        <div class="icon">P</div>
+                        <div>Select a node</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="statusbar">
+            <span class="stat"><span id="statFile">No file</span></span>
+            <span class="stat">Nodes: <span id="statNodes">0</span></span>
+            <span class="stat">Strings: <span id="statStrings">0</span></span>
+            <span class="stat" id="statModified" style="color: #f1fa8c; display:none">Modified</span>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".xmlb" style="display: none" onchange="onFileSelected(event)">
+
+    <script>
+        // XMLB format info
+        const MAGIC = 0x000011B1;
+        const HEADER_SIZE = 24;
+        const NODE_SIZE = 32;
+        
+        let xmlbData = null;
+        let xmlbParsed = null;
+        let selectedNodeIdx = -1;
+        let aspectRatio = '4:3'; // 4:3 or 16:9
+        let zoom = 1.0;
+        let dragState = null;
+        
+        // Try connecting to Bun server, fallback to local file
+        const USE_BUN = true;
+        const API_BASE = 'http://localhost:3456';
+
+        async function loadFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        async function onFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Try to load from Bun server first
+            try {
+                const resp = await fetch(`${API_BASE}/api/load/${encodeURIComponent(file.name)}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    xmlbData = data;
+                    xmlbParsed = data;
+                    renderFile();
+                    return;
+                }
+            } catch (e) {
+                console.log('Bun server not available, loading locally');
+            }
+            
+            // Fallback: load locally
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const buf = new Uint8Array(e.target.result);
+                try {
+                    xmlbParsed = parseXMLB(buf);
+                    xmlbParsed.path = file.name;
+                    renderFile();
+                } catch (err) {
+                    alert('Failed to parse XMLB: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseXMLB(buf) {
+            const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+            
+            // Header
+            const magic = dv.getUint32(0, true);
+            const version = dv.getUint32(4, true);
+            const strtabOff = dv.getUint32(8, true);
+            const unk1 = dv.getUint32(12, true);
+            const strCount = dv.getUint32(16, true);
+            const unk2 = dv.getUint32(20, true);
+            
+            if (magic !== MAGIC) {
+                throw new Error(`Invalid magic: 0x${magic.toString(16).padStart(8, '0')}`);
+            }
+            
+            // Strings
+            const strings = new Map();
+            const stringsRev = new Map();
+            let pos = strtabOff;
+            for (let i = 0; i < strCount; i++) {
+                if (pos >= buf.length) break;
+                if (buf[pos] === 0) { pos++; continue; }
+                let end = pos;
+                while (end < buf.length && buf[end] !== 0) end++;
+                const s = new TextDecoder('iso-8859-1').decode(buf.slice(pos, end));
+                strings.set(pos, s);
+                stringsRev.set(s, pos);
+                pos = end + 1;
+            }
+            
+            // Nodes
+            const nodes = [];
+            for (let n = 0; n < strCount; n++) {
+                const base = 0x18 + n * NODE_SIZE;
+                if (base + NODE_SIZE > buf.length) break;
+                
+                const offsets = [];
+                for (let i = 0; i < 8; i++) {
+                    offsets.push(dv.getUint32(base + i * 4, true));
+                }
+                
+                const typeOff = offsets[0];
+                const nameOff = offsets[1];
+                
+                let typeStr = strings.get(typeOff);
+                if (typeOff === 0xFFFFFFFF) typeStr = null;
+                else if (!typeStr) typeStr = `<0x${typeOff.toString(16).padStart(4, '0')}>`;
+                
+                let nameStr = strings.get(nameOff);
+                if (nameOff === 0xFFFFFFFF) nameStr = null;
+                else if (!nameStr) nameStr = `<0x${nameOff.toString(16).padStart(4, '0')}>`;
+                
+                const props = [];
+                for (let i = 0; i < 3; i++) {
+                    const keyOff = offsets[2 + i * 2];
+                    const val = offsets[3 + i * 2];
+                    
+                    if (keyOff === 0xFFFFFFFF) continue;
+                    
+                    let key = strings.get(keyOff);
+                    if (!key) key = `<0x${keyOff.toString(16).padStart(4, '0')}>`;
+                    
+                    let valStr = null;
+                    let valRaw = null;
+                    
+                    if (val === 0xFFFFFFFF) {
+                        valStr = null;
+                    } else if (strings.has(val)) {
+                        valStr = strings.get(val);
+                    } else {
+                        valStr = val.toString();
+                        valRaw = val;
+                    }
+                    
+                    props.push({ key, value: valStr ?? valRaw, isRaw: valRaw !== null });
+                }
+                
+                nodes.push({
+                    index: n,
+                    fileOffset: base,
+                    type: typeStr,
+                    name: nameStr,
+                    props
+                });
+            }
+            
+            return {
+                path: 'local.xmlb',
+                size: buf.length,
+                magic,
+                version,
+                strtabOff,
+                strCount,
+                unk1,
+                unk2,
+                strings: Object.fromEntries(strings),
+                nodes
+            };
+        }
+
+        function renderFile() {
+            if (!xmlbParsed) return;
+            
+            document.getElementById('fileInfo').textContent = `${xmlbParsed.path} (${xmlbParsed.size} bytes)`;
+            document.getElementById('statFile').textContent = xmlbParsed.path;
+            document.getElementById('statNodes').textContent = xmlbParsed.nodes.length;
+            document.getElementById('statStrings').textContent = Object.keys(xmlbParsed.strings).length;
+            document.getElementById('nodeCount').textContent = xmlbParsed.nodes.length;
+            document.getElementById('saveBtn').disabled = false;
+            document.getElementById('deployBtn').disabled = false;
+            
+            renderNodeTree();
+            renderPreview();
+        }
+
+        function renderNodeTree() {
+            const tree = document.getElementById('nodeTree');
+            tree.innerHTML = '';
+            
+            for (const node of xmlbParsed.nodes) {
+                const item = document.createElement('div');
+                item.className = 'node-tree-item';
+                if (node.index === selectedNodeIdx) item.classList.add('selected');
+                item.onclick = () => selectNode(node.index);
+                
+                const typeClass = (node.type || 'unknown').toLowerCase().replace(/[^a-z0-9]/g, '');
+                item.innerHTML = `
+                    <span class="index">${node.index}</span>
+                    <span class="type widget ${typeClass}">${node.type || '???'}</span>
+                    <span class="name">${node.name || '???'}</span>
+                `;
+                tree.appendChild(item);
+            }
+        }
+
+        function renderPreview() {
+            const canvas = document.getElementById('previewCanvas');
+            const w = aspectRatio === '4:3' ? 1024 : 1280;
+            const h = aspectRatio === '4:3' ? 768 : 720;
+            canvas.style.width = `${w * zoom}px`;
+            canvas.style.height = `${h * zoom}px`;
+            canvas.innerHTML = '';
+            
+            for (const node of xmlbParsed.nodes) {
+                const widget = createWidgetElement(node);
+                canvas.appendChild(widget);
+            }
+        }
+
+        function createWidgetElement(node) {
+            const div = document.createElement('div');
+            div.className = 'widget';
+            div.dataset.idx = node.index;
+            
+            const typeClass = (node.type || 'unknown').toLowerCase().replace(/[^a-z0-9]/g, '');
+            div.classList.add(typeClass);
+            
+            // Find position (mark, item) and size
+            let x = 0, y = 0, width = 100, height = 24;
+            
+            for (const prop of node.props) {
+                if (prop.key === 'mark' && prop.isRaw) {
+                    // Mark seems to be a vertical position index
+                    y = 50 + (prop.value * 5);
+                }
+                if (prop.key === 'item' && prop.isRaw) {
+                    y = prop.value;
+                    if (y > 100) y = (y - 500) * 4;
+                }
+            }
+            
+            // Set defaults by type
+            if (node.type === 'MENU_ITEM_MODEL') {
+                width = 200;
+                height = 32;
+                div.classList.add('menu_item');
+            } else if (node.type === 'animtext') {
+                width = 200;
+                height = 24;
+            } else if (node.type === 'style') {
+                width = 80;
+                height = 80;
+            } else if (node.type === 'text') {
+                width = 200;
+                height = 20;
+            }
+            
+            div.style.left = `${x}px`;
+            div.style.top = `${y}px`;
+            div.style.width = `${width}px`;
+            div.style.height = `${height}px`;
+            
+            if (node.index === selectedNodeIdx) div.classList.add('selected');
+            
+            div.onmousedown = (e) => startDrag(e, node.index, div);
+            div.onclick = (e) => { e.stopPropagation(); selectNode(node.index); };
+            
+            const label = document.createElement('span');
+            label.textContent = `${node.type || '?'}`;
+            div.appendChild(label);
+            
+            return div;
+        }
+
+        function selectNode(idx) {
+            selectedNodeIdx = idx;
+            renderNodeTree();
+            renderPreview();
+            renderProperties();
+        }
+
+        function renderProperties() {
+            const panel = document.getElementById('properties');
+            
+            if (selectedNodeIdx < 0 || !xmlbParsed.nodes[selectedNodeIdx]) {
+                panel.innerHTML = '<div class="empty-state"><div class="icon">P</div><div>Select a node</div></div>';
+                return;
+            }
+            
+            const node = xmlbParsed.nodes[selectedNodeIdx];
+            let html = `
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11px; color: #858585; margin-bottom: 2px;">Node ${node.index}</div>
+                    <div style="font-size: 13px; color: #569cd6; font-weight: 600;">${node.type || '???'}</div>
+                    <div style="font-size: 12px; color: #d4d4d4;">${node.name || '???'}</div>
+                    <div style="font-size: 10px; color: #858585; margin-top: 4px;">Offset: 0x${node.fileOffset.toString(16).padStart(4, '0')}</div>
+                </div>
+                <hr style="border-color: #3e3e3e; margin: 12px 0;">
+            `;
+            
+            for (let i = 0; i < node.props.length; i++) {
+                const prop = node.props[i];
+                const valStr = prop.isRaw ? prop.value.toString() : JSON.stringify(prop.value);
+                html += `
+                    <div class="prop-row">
+                        <span class="key">${prop.key}</span>
+                        <input type="text" class="value" value="${valStr.replace(/"/g, '&quot;')}" 
+                            onchange="updateProperty(${i}, this.value)">
+                    </div>
+                `;
+            }
+            
+            panel.innerHTML = html;
+        }
+
+        async function updateProperty(propIdx, value) {
+            if (selectedNodeIdx < 0) return;
+            const node = xmlbParsed.nodes[selectedNodeIdx];
+            const prop = node.props[propIdx];
+            
+            // Try to send to server
+            try {
+                await fetch(`${API_BASE}/api/property/${encodeURIComponent(xmlbParsed.path)}/${selectedNodeIdx}/${prop.key}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ value: isNaN(parseInt(value)) ? value : parseInt(value) })
+                });
+            } catch (e) {}
+            
+            if (isNaN(parseInt(value))) {
+                prop.value = value;
+                prop.isRaw = false;
+            } else {
+                prop.value = parseInt(value);
+                prop.isRaw = true;
+            }
+            
+            document.getElementById('statModified').style.display = 'inline';
+            renderPreview();
+        }
+
+        function startDrag(e, idx, elem) {
+            e.preventDefault();
+            selectNode(idx);
+            
+            const rect = elem.getBoundingClientRect();
+            const canvasRect = document.getElementById('previewCanvas').getBoundingClientRect();
+            
+            dragState = {
+                idx,
+                elem,
+                startX: e.clientX,
+                startY: e.clientY,
+                origLeft: elem.offsetLeft,
+                origTop: elem.offsetTop,
+                canvasRect
+            };
+            
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', endDrag);
+        }
+
+        function onDrag(e) {
+            if (!dragState) return;
+            const dx = (e.clientX - dragState.startX) / zoom;
+            const dy = (e.clientY - dragState.startY) / zoom;
+            dragState.elem.style.left = `${dragState.origLeft + dx}px`;
+            dragState.elem.style.top = `${dragState.origTop + dy}px`;
+        }
+
+        function endDrag(e) {
+            if (!dragState) return;
+            const dx = (e.clientX - dragState.startX) / zoom;
+            const dy = (e.clientY - dragState.startY) / zoom;
+            
+            // Update the node's position (find 'mark' or 'item' property)
+            const node = xmlbParsed.nodes[dragState.idx];
+            for (const prop of node.props) {
+                if (prop.key === 'item' && prop.isRaw) {
+                    prop.value = Math.max(0, Math.round(prop.value + dy * 4));
+                }
+            }
+            
+            document.getElementById('statModified').style.display = 'inline';
+            renderProperties();
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', endDrag);
+            dragState = null;
+        }
+
+        function toggleAspect() {
+            const btn = document.getElementById('aspectBtn');
+            if (aspectRatio === '4:3') {
+                aspectRatio = '16:9';
+                btn.textContent = '16:9';
+            } else {
+                aspectRatio = '4:3';
+                btn.textContent = '4:3';
+            }
+            renderPreview();
+        }
+
+        function zoomIn() { zoom = Math.min(3, zoom + 0.1); renderPreview(); }
+        function zoomOut() { zoom = Math.max(0.3, zoom - 0.1); renderPreview(); }
+        function resetView() { zoom = 1.0; aspectRatio = '4:3'; document.getElementById('aspectBtn').textContent = '4:3'; renderPreview(); }
+
+        async function saveFile() {
+            // Send to server
+            try {
+                const resp = await fetch(`${API_BASE}/api/save`, {
+                    method: 'POST',
+                    body: JSON.stringify({ filename: xmlbParsed.path })
+                });
+                if (resp.ok) {
+                    document.getElementById('statModified').style.display = 'none';
+                    alert('Saved');
+                    return;
+                }
+            } catch (e) {}
+            
+            // Local save
+            const blob = new Blob([xmlbParsed.data || new Uint8Array(0)], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = xmlbParsed.path;
+            a.click();
+        }
+
+        async function deployToGame() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/deploy`, {
+                    method: 'POST',
+                    body: JSON.stringify({ filename: xmlbParsed.path })
+                });
+                if (resp.ok) {
+                    const result = await resp.json();
+                    alert('Deployed to: ' + result.path);
+                } else {
+                    alert('Deploy failed');
+                }
+            } catch (e) {
+                alert('Deploy error: ' + e.message);
+            }
+        }
+
+        // Auto-load sample on startup
+        window.addEventListener('load', () => {
+            // Try to auto-load from server
+            fetch(`${API_BASE}/api/load/options.XMLB`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (data) {
+                        xmlbParsed = data;
+                        renderFile();
+                    }
+                })
+                .catch(() => {});
+        });
+    </script>
+</body>
+</html>

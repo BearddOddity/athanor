@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athanor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #1a1a1e;
+            --bg-secondary: #25252a;
+            --bg-tertiary: #2a2a30;
+            --border: #3a3a40;
+            --text-primary: #c5c5d0;
+            --text-secondary: #858585;
+            --text-muted: #6a6a70;
+            --accent: #007acc;
+            --accent-hover: #1177bb;
+            --success: #56cf6a;
+            --warning: #d8a03b;
+            --error: #e35454;
+            --info: #4ec9b0;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+        }
+
+        /* Menu Bar */
+        .menubar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 16px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        .menubar-brand {
+            color: var(--accent);
+            font-weight: 600;
+            margin-right: 16px;
+        }
+        .menubar-item {
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.15s;
+        }
+        .menubar-item:hover { background: var(--bg-tertiary); }
+        .menubar-item.active { color: var(--accent); }
+
+        /* Toolbar */
+        .toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 48px;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .toolbar-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .toolbar-btn:hover { background: #3a3a45; border-color: var(--accent); }
+        .toolbar-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .toolbar-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+        .toolbar-btn.primary:hover { background: var(--accent-hover); }
+        .toolbar-separator {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+            margin: 0 6px;
+        }
+        .toolbar-spacer { flex: 1; }
+
+        /* Main Layout */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .panel {
+            background: #1e1e24;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .panel:last-child { border-right: none; }
+
+        .panel-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 36px;
+        }
+        .panel-header .badge {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: normal;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        /* Content Browser */
+        #contentBrowser {
+            width: 320px;
+            min-width: 280px;
+        }
+        .search-box {
+            padding: 8px 12px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+        }
+        .search-box input {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: inherit;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        #fileTree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            list-style: none;
+            font-size: 11px;
+        }
+        .tree-item {
+            padding: 5px 10px;
+            margin: 1px 0;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            user-select: none;
+        }
+        .tree-item:hover { background: var(--bg-tertiary); }
+        .tree-item.selected { background: var(--accent); color: white; }
+        .tree-item .icon {
+            font-size: 11px;
+            opacity: 0.8;
+            min-width: 14px;
+        }
+        .tree-item.folder { font-weight: 600; color: #b5b5c0; }
+        .tree-item.file { font-weight: normal; }
+        .tree-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+        .tree-item .badge {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 0 6px;
+            border-radius: 8px;
+            font-size: 9px;
+        }
+        .tree-item.selected .badge { background: rgba(255,255,255,0.2); color: white; }
+
+        /* Viewport */
+        #viewportPanel { flex: 1; }
+        .viewport-toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            height: 36px;
+            font-size: 11px;
+        }
+        .viewport-toolbar .label {
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .viewport-toolbar .actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .viewport-toolbar .info {
+            color: var(--text-secondary);
+            margin-left: 16px;
+        }
+        #previewCanvas {
+            flex: 1;
+            background: #14141a;
+            position: relative;
+            overflow: auto;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .canvas-container {
+            background: #1a1a24;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        .canvas-empty {
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .canvas-empty h3 {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .canvas-empty p { font-size: 11px; }
+
+        /* Aspect button group */
+        .aspect-group {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .aspect-btn {
+            background: var(--bg-tertiary);
+            border: none;
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+        }
+        .aspect-btn:hover { background: #3a3a45; }
+        .aspect-btn.active { background: var(--accent); color: white; }
+
+        /* Node visual */
+        .node-visual {
+            position: absolute;
+            border: 1px solid var(--accent);
+            background: rgba(86, 156, 214, 0.15);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            font-family: 'Consolas', monospace;
+            padding: 4px 8px;
+            color: var(--accent);
+            transition: all 0.15s;
+        }
+        .node-visual:hover {
+            background: rgba(86, 156, 214, 0.3);
+            box-shadow: 0 0 8px rgba(86, 156, 214, 0.4);
+        }
+        .node-visual.selected {
+            background: var(--accent);
+            color: white;
+            border-color: white;
+        }
+
+        /* Details Panel */
+        #detailsPanel {
+            width: 340px;
+            min-width: 280px;
+        }
+        #detailsContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section h4 {
+            color: var(--accent);
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+        .prop-row {
+            display: grid;
+            grid-template-columns: 90px 1fr;
+            gap: 8px;
+            align-items: center;
+            margin: 4px 0;
+            font-size: 11px;
+        }
+        .prop-row .key {
+            color: #9cdcfe;
+            font-family: 'Consolas', monospace;
+            font-size: 10px;
+        }
+        .prop-row .value {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            color: #d4d4d4;
+            font-size: 10px;
+            word-break: break-all;
+        }
+        .info-value { color: #d4d4d4; font-family: 'Consolas', monospace; font-size: 11px; }
+        .empty-details {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-details .icon {
+            font-size: 32px;
+            opacity: 0.4;
+            margin-bottom: 12px;
+        }
+
+        /* Status Bar */
+        .statusbar {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            height: 28px;
+        }
+        .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
+        .status-item { display: flex; align-items: center; gap: 6px; }
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            display: inline-block;
+        }
+        .status-separator {
+            width: 1px;
+            height: 16px;
+            background: var(--border);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4a4a55; }
+    </style>
+</head>
+<body>
+    <!-- Menu Bar -->
+    <div class="menubar">
+        <span class="menubar-brand">Athanor</span>
+        <span class="menubar-item active">File</span>
+        <span class="menubar-item">Edit</span>
+        <span class="menubar-item">View</span>
+        <span class="menubar-item">Tools</span>
+        <span class="menubar-item">Help</span>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <button class="toolbar-btn primary" onclick="openFile()">Open</button>
+            <button class="toolbar-btn" onclick="saveFile()">Save</button>
+            <button class="toolbar-btn" onclick="deployFile()">Deploy</button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="refreshFiles()">Refresh</button>
+            <button class="toolbar-btn" onclick="showFilters()">Filter</button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <div class="toolbar-group">
+            <div class="aspect-group">
+                <button class="aspect-btn active" data-ratio="4:3">4:3</button>
+                <button class="aspect-btn" data-ratio="16:9">16:9</button>
+            </div>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="exportText()">Export</button>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Content Browser -->
+        <div class="panel" id="contentBrowser">
+            <div class="panel-header">
+                <span>Content Browser</span>
+                <span class="badge" id="fileCountBadge">0</span>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search files..." oninput="filterFiles()">
+            </div>
+            <ul id="fileTree">Loading...</ul>
+        </div>
+
+        <!-- Viewport -->
+        <div class="panel" id="viewportPanel">
+            <div class="viewport-toolbar">
+                <span class="label">Viewport</span>
+                <span class="info" id="viewportInfo">No file loaded</span>
+            </div>
+            <div id="previewCanvas">
+                <div class="canvas-empty">
+                    <h3>No File Selected</h3>
+                    <p>Choose a file from the Content Browser</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Panel -->
+        <div class="panel" id="detailsPanel">
+            <div class="panel-header">
+                <span>Details</span>
+            </div>
+            <div id="detailsContent">
+                <div class="empty-details">
+                    <div class="icon">&#9776;</div>
+                    <p>Select a file to view details</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="statusbar">
+        <div class="status-left">
+            <span class="status-item"><span class="status-indicator"></span>Connected</span>
+            <span class="status-separator"></span>
+            <span class="status-item" id="formatInfo">Format: --</span>
+            <span class="status-item" id="filePathInfo">No file</span>
+        </div>
+        <div class="status-right">
+            <span class="status-item" id="fileSizeInfo">Size: 0</span>
+            <span class="status-separator"></span>
+            <span class="status-item" id="nodeCountInfo">Nodes: 0</span>
+            <span class="status-separator"></span>
+            <span class="status-item" id="stringCountInfo">Strings: 0</span>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let currentFormat = null;
+        let currentData = null;
+        let nodesData = [];
+        let stringsData = {};
+        let aspectRatio = '4:3';
+        let allFiles = [];
+        let expandedFolders = new Set();
+
+        async function loadFileTree() {
+            const treeEl = document.getElementById('fileTree');
+            try {
+                const resp = await fetch('/api/files');
+                const data = await resp.json();
+                allFiles = data.files;
+                document.getElementById('fileCountBadge').textContent = data.count || allFiles.length;
+                renderTree();
+            } catch (e) {
+                treeEl.innerHTML = '<li class="tree-item" style="color:#e35454">Error loading files</li>';
+            }
+        }
+
+        function renderTree() {
+            const treeEl = document.getElementById('fileTree');
+            const groups = {};
+
+            for (const f of allFiles) {
+                const ext = f.ext || '.unk';
+                if (!groups[ext]) groups[ext] = [];
+                groups[ext].push(f);
+            }
+
+            treeEl.innerHTML = '';
+
+            for (const ext of Object.keys(groups).sort()) {
+                const isExpanded = expandedFolders.has(ext);
+                const folder = document.createElement('li');
+                folder.className = 'tree-item folder' + (isExpanded ? ' selected' : '');
+                folder.innerHTML = '<span class="icon">' + (isExpanded ? '&#9660;' : '&#9654;') + '</span><span class="name">' + ext.toUpperCase() + '</span><span class="badge">' + groups[ext].length + '</span>';
+                treeEl.appendChild(folder);
+
+                const container = document.createElement('ul');
+                container.style.listStyle = 'none';
+                container.style.paddingLeft = '16px';
+                container.style.display = isExpanded ? 'block' : 'none';
+
+                for (const f of groups[ext].slice(0, 500)) {
+                    const item = document.createElement('li');
+                    item.className = 'tree-item file';
+                    item.innerHTML = '<span class="icon">&#128196;</span><span class="name">' + escapeHtml(f.name) + '</span>';
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        document.querySelectorAll('.tree-item.file').forEach(el => el.classList.remove('selected'));
+                        item.classList.add('selected');
+                        loadFile(f.relPath);
+                    };
+                    container.appendChild(item);
+                }
+
+                if (groups[ext].length > 500) {
+                    const more = document.createElement('li');
+                    more.className = 'tree-item';
+                    more.style.color = 'var(--text-muted)';
+                    more.textContent = '... ' + (groups[ext].length - 500) + ' more';
+                    container.appendChild(more);
+                }
+
+                treeEl.appendChild(container);
+
+                folder.onclick = (e) => {
+                    e.stopPropagation();
+                    if (expandedFolders.has(ext)) {
+                        expandedFolders.delete(ext);
+                    } else {
+                        expandedFolders.add(ext);
+                    }
+                    renderTree();
+                };
+            }
+        }
+
+        function filterFiles() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const items = document.querySelectorAll('.tree-item.file');
+            items.forEach(item => {
+                const name = item.textContent.toLowerCase();
+                item.style.display = name.includes(query) ? '' : 'none';
+            });
+        }
+
+        async function loadFile(relPath) {
+            try {
+                document.getElementById('viewportInfo').textContent = 'Loading...';
+                document.getElementById('filePathInfo').textContent = relPath;
+
+                const resp = await fetch('/api/parse/' + encodeURIComponent(relPath));
+                const data = await resp.json();
+
+                if (data.error) {
+                    document.getElementById('viewportInfo').textContent = 'Error: ' + data.error;
+                    return;
+                }
+
+                currentFile = relPath;
+                currentFormat = data.format;
+                currentData = data;
+                nodesData = data.nodes || [];
+                stringsData = data.strings || {};
+
+                document.getElementById('formatInfo').textContent = 'Format: ' + currentFormat;
+                document.getElementById('fileSizeInfo').textContent = 'Size: ' + formatSize(data.size);
+                document.getElementById('nodeCountInfo').textContent = 'Nodes: ' + nodesData.length;
+                document.getElementById('stringCountInfo').textContent = 'Strings: ' + (data.strCount || Object.keys(stringsData).length);
+                document.getElementById('viewportInfo').textContent = currentFile;
+
+                renderPreview(data);
+                renderDetails(data);
+            } catch (e) {
+                console.error('Failed:', e);
+            }
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+        }
+
+        function renderPreview(data) {
+            const canvas = document.getElementById('previewCanvas');
+            if (!data) return;
+
+            if (data.format === 'XMLB' && data.nodes && data.nodes.length > 0) {
+                const size = aspectRatio === '4:3' ? {w: 1024, h: 768} : {w: 1280, h: 720};
+                let html = '<div class="canvas-container" style="width:' + size.w + 'px; height:' + size.h + 'px;">';
+
+                for (const node of data.nodes) {
+                    const top = 30 + (node.index * 32);
+                    if (top > size.h - 30) break;
+                    html += '<div class="node-visual" data-idx="' + node.index + '" style="left:40px; top:' + top + 'px; width:280px; height:26px;" onclick="selectNode(' + node.index + ')">';
+                    html += '<span style="opacity:0.6">[' + node.index + ']</span> ' + escapeHtml(node.type || '?') + ' / ' + escapeHtml(node.name || '');
+                    html += '</div>';
+                }
+
+                html += '</div>';
+                canvas.innerHTML = html;
+            } else {
+                let html = '<div class="canvas-container" style="width:800px; height:500px; display:flex; align-items:center; justify-content:center;">';
+                html += '<div class="canvas-empty"><h3>' + escapeHtml(data.format || 'Unknown') + ' Format</h3>';
+                html += '<p>Magic: 0x' + (data.magic || 0).toString(16).padStart(8, '0') + '</p>';
+                html += '<p>Size: ' + formatSize(data.size) + '</p>';
+                html += '<p>Strings: ' + (data.strCount || 0) + '</p></div></div>';
+                canvas.innerHTML = html;
+            }
+        }
+
+        function renderDetails(data) {
+            const details = document.getElementById('detailsContent');
+            let html = '';
+
+            html += '<div class="section"><h4>File Information</h4>';
+            html += propRow('Format', data.format);
+            html += propRow('Magic', '0x' + (data.magic || 0).toString(16).padStart(8, '0'));
+            html += propRow('Version', String(data.version));
+            html += propRow('File Size', formatSize(data.size));
+            html += propRow('String Count', String(data.strCount || 0));
+            html += propRow('Node Count', String((data.nodes || []).length));
+            html += '</div>';
+
+            if (data.nodes && data.nodes.length > 0) {
+                html += '<div class="section"><h4>Nodes</h4>';
+                for (const node of data.nodes.slice(0, 30)) {
+                    html += '<div style="margin:4px 0; padding:8px; background:var(--bg-tertiary); border-radius:3px; cursor:pointer; border-left:3px solid var(--accent);" onclick="selectNode(' + node.index + ')">';
+                    html += '<div style="color:#9cdcfe; font-size:10px; font-family:Consolas;">[' + node.index + '] ' + escapeHtml(node.type || '???') + '</div>';
+                    html += '<div style="color:#d4d4d4; font-size:10px; margin-top:2px;">' + escapeHtml(node.name || '') + '</div>';
+                    if (node.props && node.props.length > 0) {
+                        html += '<div style="color:var(--text-muted); font-size:9px; margin-top:4px; font-family:Consolas;">';
+                        for (const p of node.props.slice(0, 3)) {
+                            html += escapeHtml(p.key) + '=' + (p.isRaw ? p.value : JSON.stringify(p.value)) + ' ';
+                        }
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                if (data.nodes.length > 30) {
+                    html += '<div style="color:var(--text-muted); font-size:10px; text-align:center; margin-top:8px;">+' + (data.nodes.length - 30) + ' more nodes</div>';
+                }
+                html += '</div>';
+            }
+
+            if (data.strings && Object.keys(data.strings).length > 0) {
+                html += '<div class="section"><h4>String Table</h4>';
+                const strEntries = Object.entries(data.strings).slice(0, 20);
+                for (const [off, val] of strEntries) {
+                    html += propRow('0x' + parseInt(off).toString(16).padStart(4, '0'), String(val).substring(0, 50));
+                }
+                if (Object.keys(data.strings).length > 20) {
+                    html += '<div style="color:var(--text-muted); font-size:10px; text-align:center; margin-top:8px;">+' + (Object.keys(data.strings).length - 20) + ' more</div>';
+                }
+                html += '</div>';
+            }
+
+            details.innerHTML = html;
+        }
+
+        function propRow(key, value) {
+            return '<div class="prop-row"><span class="key">' + escapeHtml(key) + '</span><span class="value">' + escapeHtml(value) + '</span></div>';
+        }
+
+        function escapeHtml(s) {
+            if (s === null || s === undefined) return '';
+            return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function selectNode(idx) {
+            document.querySelectorAll('.node-visual').forEach(el => el.classList.remove('selected'));
+            const el = document.querySelector('.node-visual[data-idx="' + idx + '"]');
+            if (el) el.classList.add('selected');
+        }
+
+        function openFile() { alert('Open file dialog'); }
+        function saveFile() { if (!currentFile) return; alert('Save: ' + currentFile); }
+        function deployFile() { if (!currentFile) return; alert('Deploy: ' + currentFile); }
+        function refreshFiles() { loadFileTree(); }
+        function showFilters() { alert('Filter dialog'); }
+        function exportText() {
+            if (!currentData) return;
+            const text = JSON.stringify(currentData, null, 2);
+            const blob = new Blob([text], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = currentFile.replace(/\\/g, '_').replace(/\//g, '_') + '.json';
+            a.click();
+        }
+
+        document.querySelectorAll('.aspect-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                aspectRatio = btn.dataset.ratio;
+                if (currentData) renderPreview(currentData);
+            };
+        });
+
+        loadFileTree();
+    </script>
+</body>
+</html>
