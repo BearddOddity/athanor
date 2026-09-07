@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athanor Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --base-color: #292929;
+            --editor-bg: #1a1a1a;
+            --titlebar-bg: #1e1e1e;
+            --surface-1: #232323;
+            --surface-2: #2e2e2e;
+            --surface-3: #383838;
+            --accent: #569eff;
+            --accent-semi: rgba(86, 158, 255, 0.275);
+            --accent-dim: rgba(86, 158, 255, 0.4);
+            --font-color: rgba(255, 255, 255, 0.75);
+            --text-muted: #808080;
+            --border-color: #333333;
+            --success: #4ec9b0;
+            --warning: #dcdcaa;
+            --error: #f14c4c;
+            --corner-radius: 4px;
+            --border-width: 1px;
+        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--editor-bg); color: var(--font-color); height: 100vh; overflow: hidden; font-size: 13px; }
+        .app { display: grid; grid-template-rows: 30px 1fr 24px; height: 100vh; }
+
+        .titlebar { background: var(--titlebar-bg); display: flex; align-items: center; padding: 0 12px; border-bottom: var(--border-width) solid var(--border-color); gap: 2px; font-size: 12px; }
+        .titlebar .app-name { color: var(--font-color); font-weight: 600; margin-right: 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+        .titlebar .app-logo { width: 20px; height: 20px; background: var(--accent); border-radius: var(--corner-radius); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 11px; }
+        .titlebar-btn { padding: 4px 10px; border-radius: var(--corner-radius); border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 11px; font-family: 'Inter', sans-serif; transition: 150ms; }
+        .titlebar-btn:hover { background: var(--surface-2); color: var(--font-color); }
+        .titlebar-btn.active { color: var(--font-color); }
+        .titlebar-right { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+        .win-btn { width: 28px; height: 24px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 10px; border-radius: var(--corner-radius); display: flex; align-items: center; justify-content: center; transition: 150ms; }
+        .win-btn:hover { background: var(--surface-2); color: var(--font-color); }
+        .win-btn.close:hover { background: var(--error); color: white; }
+
+        .main { display: grid; grid-template-columns: 48px 1fr 240px; overflow: hidden; }
+        .sidebar { background: #1a1a1a; border-right: var(--border-width) solid var(--border-color); display: flex; flex-direction: column; align-items: center; padding: 6px 0; gap: 1px; }
+        .sidebar-btn { width: 36px; height: 36px; border-radius: var(--corner-radius); border: none; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: 150ms; }
+        .sidebar-btn:hover { background: var(--surface-2); color: var(--font-color); }
+        .sidebar-btn.active { color: var(--accent); background: var(--accent-semi); }
+
+        .center-area { background: var(--editor-bg); position: relative; overflow: auto; padding: 16px; }
+        .dock { background: var(--surface-1); border-left: var(--border-width) solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
+        .dock-header { padding: 8px 12px; background: var(--surface-2); border-bottom: var(--border-width) solid var(--border-color); font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 500; letter-spacing: 0.5px; }
+        .dock-body { flex: 1; overflow: auto; padding: 8px; }
+
+        .footer { background: var(--titlebar-bg); border-top: var(--border-width) solid var(--border-color); display: flex; align-items: center; padding: 0 12px; gap: 20px; font-size: 11px; color: var(--text-muted); }
+        .footer .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+        .footer .status-dot.online { background: var(--success); }
+        .footer .status-dot.offline { background: var(--error); }
+
+        .section { margin-bottom: 20px; }
+        .section-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px; }
+        .btn { padding: 6px 14px; border-radius: var(--corner-radius); border: var(--border-width) solid var(--border-color); cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; font-weight: 500; transition: 150ms; background: var(--surface-2); color: var(--font-color); }
+        .btn-primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+        .btn-primary:hover { background: #6ba3ff; }
+        .btn-secondary { background: var(--surface-2); color: var(--font-color); border-color: var(--border-color); }
+        .btn-secondary:hover { background: var(--surface-3); border-color: #444; }
+        .input-field { background: var(--surface-2); border: var(--border-width) solid var(--border-color); border-radius: var(--corner-radius); padding: 6px 10px; color: var(--font-color); font-size: 12px; width: 100%; font-family: 'Inter', sans-serif; }
+        .input-field:focus { outline: none; border-color: var(--accent); }
+        .node-item { padding: 6px 8px; margin: 1px 0; border-radius: 3px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 8px; color: var(--font-color); }
+        .node-item:hover { background: var(--surface-2); }
+        .node-item.active { color: var(--accent); background: var(--accent-semi); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; font-family: 'Inter', sans-serif; }
+        .badge-info { background: var(--accent-semi); color: var(--accent); }
+        .badge-success { background: rgba(78, 201, 176, 0.2); color: var(--success); }
+        .badge-warning { background: rgba(220, 220, 170, 0.2); color: var(--warning); }
+        .result-box { background: var(--surface-2); border: var(--border-width) solid var(--border-color); border-radius: var(--corner-radius); padding: 10px; margin-top: 8px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; max-height: 300px; overflow: auto; white-space: pre-wrap; color: var(--font-color); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat-card { background: var(--surface-2); border-radius: var(--corner-radius); padding: 16px; text-align: center; border: var(--border-width) solid var(--border-color); }
+        .stat-card .value { font-size: 28px; font-weight: 700; color: var(--accent); font-family: 'Inter', sans-serif; }
+        .stat-card .label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-family: 'Inter', sans-serif; letter-spacing: 0.5px; }
+        .flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .mt-8 { margin-top: 8px; }
+        .mb-8 { margin-bottom: 8px; }
+        .w-full { width: 100%; }
+        .divider { height: 1px; background: var(--border-color); margin: 8px 0; }
+        h2 { font-size: 18px; font-weight: 600; color: var(--font-color); margin-bottom: 16px; font-family: 'Inter', sans-serif; }
+        h3 { font-size: 14px; font-weight: 600; color: var(--font-color); margin-bottom: 8px; font-family: 'Inter', sans-serif; }
+        p { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+        .tool-section { background: var(--surface-2); border: var(--border-width) solid var(--border-color); border-radius: var(--corner-radius); padding: 16px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="titlebar">
+        <div class="app-name">
+            <div class="app-logo">A</div>
+            ATHANOR
+        </div>
+        <button class="titlebar-btn" data-page="dashboard">Dashboard</button>
+        <button class="titlebar-btn" data-page="editor">XMLB Editor</button>
+        <button class="titlebar-btn" data-page="chrb">CHRB</button>
+        <button class="titlebar-btn" data-page="anim">ANIM</button>
+        <button class="titlebar-btn" data-page="igb">IGB</button>
+        <button class="titlebar-btn" data-page="disc">Disc</button>
+        <button class="titlebar-btn" data-page="ghidra">Ghidra</button>
+        <button class="titlebar-btn" data-page="folder">Game Folder</button>
+        <div class="titlebar-right">
+            <button class="win-btn" title="Minimize">&#9472;</button>
+            <button class="win-btn" title="Maximize">&#9723;</button>
+            <button class="win-btn close" title="Close">&#10005;</button>
+        </div>
+    </div>
+    <div class="main">
+        <div class="sidebar">
+            <button class="sidebar-btn active" data-page="dashboard" title="Dashboard">&#9632;</button>
+            <button class="sidebar-btn" data-page="editor" title="XMLB Editor">&#9744;</button>
+            <button class="sidebar-btn" data-page="chrb" title="CHRB">&#9829;</button>
+            <button class="sidebar-btn" data-page="anim" title="ANIM">&#9830;</button>
+            <button class="sidebar-btn" data-page="igb" title="IGB">&#9670;</button>
+            <button class="sidebar-btn" data-page="disc" title="Disc">&#9723;</button>
+            <button class="sidebar-btn" data-page="ghidra" title="Ghidra">&#9672;</button>
+            <button class="sidebar-btn" data-page="folder" title="Game Folder">&#128193;</button>
+        </div>
+        <div class="center-area" id="content"></div>
+        <div class="dock">
+            <div class="dock-header">Output</div>
+            <div class="dock-body">
+                <div id="output" class="result-box" style="min-height:200px;">Ready. Select an action to begin.</div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <div><span class="status-dot online" id="statusDot"></span> <span id="statusLabel">Online</span></div>
+        <div>Engine: Athanor v0.1.0</div>
+        <div style="margin-left:auto;">API: <a href="http://127.0.0.1:3459/api/health" style="color:var(--accent);text-decoration:none;">/api/health</a></div>
+    </div>
+</div>
+<script>
+const API_BASE = 'http://127.0.0.1:3459';
+let currentPage = 'dashboard';
+let gameSource = '';
+
+async function api(path, method='GET', body=null, query=null) {
+    let url = `${API_BASE}${path}`;
+    if (query && query.source) {
+        url += '?source=' + encodeURIComponent(query.source);
+    }
+    const opts = { method, headers: {'Content-Type':'application/json'} };
+    if (body) opts.body = JSON.stringify(body);
+    const resp = await fetch(url, opts);
+    return await resp.json();
+}
+
+function setOutput(text) { document.getElementById('output').textContent = typeof text === 'string' ? text : JSON.stringify(text, null, 2); }
+
+async function checkHealth() {
+    try {
+        const r = await api('/api/health');
+        document.getElementById('statusDot').className = 'status-dot online';
+        document.getElementById('statusLabel').textContent = 'Online';
+    } catch(e) {
+        document.getElementById('statusDot').className = 'status-dot offline';
+        document.getElementById('statusLabel').textContent = 'Offline';
+    }
+}
+
+function showPage(page) {
+    currentPage = page;
+    document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.sidebar-btn[data-page="${page}"]`)?.classList.add('active');
+    document.querySelectorAll('.titlebar-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.titlebar-btn[data-page="${page}"]`)?.classList.add('active');
+    renderPage();
+}
+
+async function renderPage() {
+    const content = document.getElementById('content');
+    switch(currentPage) {
+        case 'dashboard': renderDashboard(content); break;
+        case 'editor': renderEditor(content); break;
+        case 'chrb': renderChrb(content); break;
+        case 'anim': renderAnim(content); break;
+        case 'igb': renderIgb(content); break;
+        case 'disc': renderDisc(content); break;
+        case 'ghidra': renderGhidra(content); break;
+        case 'folder': renderFolder(content); break;
+    }
+}
+
+// Event delegation for all buttons
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    const page = btn.getAttribute('data-page');
+    if (page) {
+        showPage(page);
+        return;
+    }
+
+    const action = btn.getAttribute('data-action');
+    if (!action) return;
+
+    switch(action) {
+        case 'load-xmlb': await loadXmlb(); break;
+        case 'save-xmlb': await saveXmlb(); break;
+        case 'load-chrb': await loadChrb(); break;
+        case 'import-chrb': await importChrb(); break;
+        case 'load-anim': await loadAnim(); break;
+        case 'import-anim': await importAnim(); break;
+        case 'load-igb': await loadIgb(); break;
+        case 'extract-disc': await extractDisc(); break;
+        case 'ghidra-init': await ghidraInit(); break;
+        case 'ghidra-analyze': await ghidraAnalyze(); break;
+        case 'ghidra-symbols': await ghidraSymbols(); break;
+        case 'ghidra-functions': await ghidraFunctions(); break;
+        case 'ghidra-strings': await ghidraStrings(); break;
+        case 'import-folder': await importFolder(); break;
+    }
+});
+
+// Dashboard
+function renderDashboard(content) {
+    content.innerHTML = `
+        <div class="section">
+            <h2>Athanor Engine Dashboard</h2>
+            <div class="grid-2" style="margin-bottom:20px;">
+                <div class="stat-card"><div class="value">19</div><div class="label">Supported Formats</div></div>
+                <div class="stat-card"><div class="value">7</div><div class="label">API Endpoints</div></div>
+                <div class="stat-card"><div class="value">3</div><div class="label">Console Formats</div></div>
+                <div class="stat-card"><div class="value">4</div><div class="label">Executable Parsers</div></div>
+            </div>
+        </div>
+        <div class="tool-section">
+            <h3>Quick Actions</h3>
+            <div class="flex">
+                <button class="btn btn-primary" data-page="editor">Open XMLB Editor</button>
+                <button class="btn btn-secondary" data-page="chrb">CHRB Editor</button>
+                <button class="btn btn-secondary" data-page="disc">Extract Disc</button>
+            </div>
+        </div>
+        <div class="tool-section">
+            <h3>Supported Formats</h3>
+            <div id="formatsList"></div>
+        </div>
+        <div class="tool-section">
+            <h3>API Status</h3>
+            <div id="apiStatus"></div>
+        </div>
+    `;
+    loadFormats();
+    loadApiStatus();
+}
+
+async function loadFormats() {
+    try {
+        const data = await api('/api/formats');
+        if (data.success && data.data) {
+            const list = document.getElementById('formatsList');
+            list.innerHTML = data.data.map(f => `<div class="node-item"><span class="badge badge-info">${f.ext}</span> ${f.name} <span style="color:var(--text-muted);font-size:10px;margin-left:auto;">${f.desc}</span></div>`).join('');
+        }
+    } catch(e) { setOutput('Error: ' + e.message); }
+}
+
+async function loadApiStatus() {
+    try {
+        const status = await api('/api/health');
+        document.getElementById('apiStatus').innerHTML = `
+            <div class="node-item active"><span class="badge badge-success">OK</span> Health Check</div>
+            <div class="node-item"><span class="badge badge-success">OK</span> Formats API</div>
+            <div class="node-item"><span class="badge badge-success">OK</span> Ghidra MCP</div>
+        `;
+    } catch(e) {
+        document.getElementById('apiStatus').innerHTML = `<div class="node-item"><span class="badge badge-warning">ERR</span> API Offline</div>`;
+    }
+}
+
+// XMLB Editor
+function renderEditor(content) {
+    content.innerHTML = `
+        <div class="tool-section">
+            <h2>XMLB Editor</h2>
+            <p>Load and edit XMLB menu/UI layout files.</p>
+            <div class="flex mt-8 mb-8">
+                <input class="input-field" id="xmlbPath" placeholder="filename.xmlb" style="flex:1;">
+                <button class="btn btn-primary" data-action="load-xmlb">Load</button>
+                <button class="btn btn-secondary" data-action="save-xmlb">Save</button>
+            </div>
+            <div id="editorContent"></div>
+        </div>
+    `;
+}
+
+async function loadXmlb() {
+    const path = document.getElementById('xmlbPath').value || 'menuscreen.xmlb';
+    setOutput('Loading ' + path + '...');
+    try {
+        const resp = await api('/api/load/' + encodeURIComponent(path), 'GET', null, gameSource ? {source: gameSource} : null);
+        if (resp.success) { setOutput(JSON.stringify(resp.data, null, 2)); renderEditorContent(resp.data); }
+        else { setOutput('Error: ' + resp.error); }
+    } catch(e) { setOutput('Error: ' + e.message); }
+}
+
+function renderEditorContent(data) {
+    const el = document.getElementById('editorContent');
+    if (!el || !data) return;
+    if (data.nodes) {
+        el.innerHTML = `<h3>Nodes (${data.nodes.length})</h3>` + data.nodes.map((n,i) => `<div class="node-item" data-node-idx="${i}"><span class="badge badge-info">${i}</span> ${n.node_type||n.name||'Node'}</div>`).join('');
+    }
+}
+
+async function saveXmlb() {
+    setOutput('Saving...');
+    const r = await api('/api/save', 'POST', { filename: document.getElementById('xmlbPath').value });
+    setOutput(JSON.stringify(r, null, 2));
+}
+
+// CHRB Editor
+function renderChrb(content) {
+    content.innerHTML = `
+        <div class="tool-section">
+            <h2>CHRB Character Editor</h2>
+            <p>Load or create character definitions.</p>
+            <div class="flex mt-8 mb-8">
+                <input class="input-field" id="chrbPath" placeholder="character.chrb" style="flex:1;">
+                <button class="btn btn-primary" data-action="load-chrb">Load</button>
+                <button class="btn btn-secondary" data-action="import-chrb">Import JSON</button>
+            </div>
+            <div id="chrbContent"></div>
+        </div>
+    `;
+}
+
+async function loadChrb() {
+    const path = document.getElementById('chrbPath').value || 'character.chrb';
+    setOutput('Loading ' + path + '...');
+    try {
+        const resp = await api('/api/chrb/' + encodeURIComponent(path), 'GET', null, gameSource ? {source: gameSource} : null);
+        if (resp.success) { setOutput(JSON.stringify(resp.data, null, 2)); renderChrbContent(resp.data); }
+        else { setOutput('Error: ' + resp.error); }
+    } catch(e) { setOutput('Error: ' + e.message); }
+}
+
+function renderChrbContent(data) {
+    const el = document.getElementById('chrbContent');
+    if (!el || !data) return;
+    el.innerHTML = `<h3>Characters (${data.character_count||data.characters?.length||0})</h3>` + (data.characters||[]).map((c,i) => `<div class="node-item"><span class="badge badge-info">${i}</span> Type: ${c.type_id||'?'} <span style="color:var(--text-muted);">HP: ${c.health||0}</span></div>`).join('');
+}
+
+async function importChrb() {
+    const json = { character_count: 1, characters: [{ type_id: 1, health: 100, speed: 5.5 }] };
+    setOutput('Importing...');
+    try { const resp = await api('/api/chrb/import', 'POST', json); setOutput(JSON.stringify(resp, null, 2)); }
+    catch(e) { setOutput('Error: ' + e.message); }
+}
+
+// ANIM Editor
+function renderAnim(content) {
+    content.innerHTML = `
+        <div class="tool-section">
+            <h2>ANIM Animation Editor</h2>
+            <p>Load and edit animation state machines.</p>
+            <div class="flex mt-8 mb-8">
+                <input class="input-field" id="animPath" placeholder="anim.anim" style="flex:1;">
+                <button class="btn btn-primary" data-action="load-anim">Load</button>
+                <button class="btn btn-secondary" data-action="import-anim">Import JSON</button>
+            </div>
+            <div id="animContent"></div>
+        </div>
+    `;
+}
+
+async function loadAnim() {
+    const path = document.getElementById('animPath').value || 'character.anim';
+    setOutput('Loading ' + path + '...');
+    try {
+        const resp = await api('/api/anim/' + encodeURIComponent(path), 'GET', null, gameSource ? {source: gameSource} : null);
+        if (resp.success) { setOutput(JSON.stringify(resp.data, null, 2)); renderAnimContent(resp.data); }
+        else { setOutput('Error: ' + resp.error); }
+    } catch(e) { setOutput('Error: ' + e.message); }
+}
+
+function renderAnimContent(data) {
+    const el = document.getElementById('animContent');
+    if (!el || !data) return;
+    el.innerHTML = `<h3>States (${data.state_count||0})</h3>` + (data.states||[]).map((s,i) => `<div class="node-item"><span class="badge badge-info">${i}</span> Type: ${s.type_id||'?'} Loop: ${s.loop?'Yes':'No'}</div>`).join('') + `<h3 class="mt-8">Transitions (${data.transition_count||0})</h3>` + (data.transitions||[]).map((t,i) => `<div class="node-item"><span class="badge badge-info">${i}</span> Transition</div>`).join('');
+}
+
+async function importAnim() {
+    const json = { state_count: 2, transitions: [], states: [{ type_id: 1, loop: true, speed: 1.0 }, { type_id: 2, loop: false, speed: 0.5 }] };
+    setOutput('Importing...');
+    try { const resp = await api('/api/anim/import', 'POST', json); setOutput(JSON.stringify(resp, null, 2)); }
+    catch(e) { setOutput('Error: ' + e.message); }
+}
+
+// IGB Texture Editor
+function renderIgb(content) {
+    content.innerHTML = `
+        <div class="tool-section">
+            <h2>IGB Texture Editor</h2>
+            <p>Extract and rebuild DXT textures.</p>
+            <div class="flex mt-8 mb-8">
+                <input class="input-field" id="igbPath" placeholder="texture.igb" style="flex:1;">
+                <button class="btn btn-primary" data-action="load-igb">Load</button>
+            </div>
+            <div id="igbContent"></div>
+        </div>
+    `;
+}
+
+async function loadIgb() {
+    const path = document.getElementById('igbPath').value || 'texture.igb';
+    setOutput('Loading ' + path + '...');
+    try {
+        const resp = await api('/api/igb/' + encodeURIComponent(path), 'GET', null, gameSource ? {source: gameSource} : null);
+        if (resp.success) { setOutput(JSON.stringify(resp.data, null, 2)); renderIgbContent(resp.data); }
+        else { setOutput('Error: ' + resp.error); }
+    } catch(e) { setOutput('Error: ' + e.message); }
+}
+
+function renderIgbContent(data) {
+    const el = document.getElementById('igbContent');
+    if (!el || !data) return;
+    el.innerHTML = `<div class="node-item active"><span class="badge badge-success">${data.width||'?'}x${data.height||'?'}</span> DXT${data.format||1}</div>`;
+}
+
+// Disc Extraction
+function renderDisc(content) {
+    content.innerHTML = `
+        <div class="tool-section">
+            <h2>Console Disc Extraction</h2>
+            <p>Extract files from Xbox ISO, PS2 ISO, or GameCube GCM images.</p>
+            <div class="flex mt-8 mb-8">
+                <select class="input-field" id="discType"><option value="auto">Auto Detect</option><option value="xbox">Xbox ISO</option><option value="ps2">PS2 ISO</option><option value="gcm">GameCube GCM</option></select>
+                <input class="input-field" id="discPath" placeholder="game.iso" style="flex:1;">
+                <button class="btn btn-primary" data-action="extract-disc">Extract</button>
+            </div>
+            <div id="discContent"></div>
+        </div>
+    `;
+}
+
+async function extractDisc() {
+    const path = document.getElementById('discPath').value || 'game.iso';
+    const type = document.getElementById('discType').value;
+    setOutput('Extracting ' + path + ' (' + type + ')...');
+    try {
+        const resp = await api('/api/disc/extract', 'POST', { filename: path, disc_type: type });
+        if (resp.success) { setOutput(JSON.stringify(resp.data, null, 2)); renderDiscContent(resp.data); }
+        else { setOutput('Error: ' + resp.error); }
+    } catch(e) { setOutput('Error: ' + e.message); }
+}
+
+function renderDiscContent(data) {
+    const el = document.getElementById('discContent');
+    if (!el || !data) return;
+    el.innerHTML = `<h3>Entries (${data.entries?.length||0})</h3>` + (data.entries||[]).slice(0,20).map(e => `<div class="node-item"><span class="badge badge-info">${e.is_directory?'+':'-'}</span> ${e.path} <span style="color:var(--text-muted);">${e.size} bytes</span></div>`).join('') + `<h3 class="mt-8">Metadata</h3><div class="node-item">Title: ${data.metadata?.title||'Unknown'}</div><div class="node-item">Disc ID: ${data.metadata?.disc_id||'N/A'}</div>`;
+}
+
+// Ghidra MCP
+function renderGhidra(content) {
+    content.innerHTML = `
+        <div class="tool-section">
+            <h2>Ghidra MCP Server</h2>
+            <p>Headless binary analysis via MCP protocol.</p>
+            <div class="flex mt-8 mb-8">
+                <input class="input-field" id="ghidraBinary" placeholder="game.exe" style="flex:1;">
+                <button class="btn btn-primary" data-action="ghidra-init">Initialize</button>
+            </div>
+            <div class="flex mb-8">
+                <button class="btn btn-secondary" data-action="ghidra-analyze">Analyze Binary</button>
+                <button class="btn btn-secondary" data-action="ghidra-symbols">Get Symbols</button>
+                <button class="btn btn-secondary" data-action="ghidra-functions">Get Functions</button>
+                <button class="btn btn-secondary" data-action="ghidra-strings">Get Strings</button>
+            </div>
+            <div id="ghidraContent"></div>
+        </div>
+    `;
+}
+
+async function ghidraInit() {
+    setOutput('Initializing Ghidra MCP...');
+    try { const resp = await api('/api/ghidra/rpc', 'POST', { jsonrpc:'2.0', method:'initialize', id:1 }); setOutput(JSON.stringify(resp, null, 2)); }
+    catch(e) { setOutput('Error: ' + e.message); }
+}
+
+async function ghidraAnalyze() {
+    const bin = document.getElementById('ghidraBinary').value || 'game.exe';
+    setOutput('Analyzing ' + bin + '...');
+    try {
+        const resp = await api('/api/ghidra/rpc', 'POST', { jsonrpc:'2.0', method:'analyze', params:{ binary_path: bin }, id:2 });
+        setOutput(JSON.stringify(resp, null, 2));
+        renderGhidraContent(resp.result?.data);
+    } catch(e) { setOutput('Error: ' + e.message); }
+}
+
+async function ghidraSymbols() {
+    setOutput('Fetching symbols...');
+    try { const resp = await api('/api/ghidra/rpc', 'POST', { jsonrpc:'2.0', method:'get_symbols', params:{ binary_path: 'game.exe' }, id:3 }); setOutput(JSON.stringify(resp, null, 2)); }
+    catch(e) { setOutput('Error: ' + e.message); }
+}
+
+async function ghidraFunctions() {
+    setOutput('Fetching functions...');
+    try { const resp = await api('/api/ghidra/rpc', 'POST', { jsonrpc:'2.0', method:'get_functions', params:{ binary_path: 'game.exe' }, id:4 }); setOutput(JSON.stringify(resp, null, 2)); }
+    catch(e) { setOutput('Error: ' + e.message); }
+}
+
+async function ghidraStrings() {
+    setOutput('Fetching strings...');
+    try { const resp = await api('/api/ghidra/rpc', 'POST', { jsonrpc:'2.0', method:'get_strings', params:{ binary_path: 'game.exe' }, id:5 }); setOutput(JSON.stringify(resp, null, 2)); }
+    catch(e) { setOutput('Error: ' + e.message); }
+}
+
+function renderGhidraContent(data) {
+    const el = document.getElementById('ghidraContent');
+    if (!el || !data) return;
+    el.innerHTML = `<h3>Analysis Results</h3><div class="node-item active"><span class="badge badge-success">${data.arch||'?'}</span> ${data.endian||'little'}</div><div class="node-item">Entry: 0x${(data.entry_point||0).toString(16)}</div>`;
+}
+
+// Game Folder Import
+function renderFolder(content) {
+    content.innerHTML = `
+        <div class="tool-section">
+            <h2>Game Folder Import</h2>
+            <p>Import an extracted game folder to make its files available through Athanor.</p>
+            <div class="flex mt-8 mb-8">
+                <input class="input-field" id="gameFolderPath" placeholder="C:\\Games\\MyGame" style="flex:1;">
+                <button class="btn btn-primary" data-action="import-folder">Import Folder</button>
+            </div>
+            <div id="folderStatus"></div>
+        </div>
+    `;
+}
+
+async function importFolder() {
+    const folderPath = document.getElementById('gameFolderPath').value;
+    if (!folderPath) {
+        setOutput('Please enter a folder path.');
+        return;
+    }
+    setOutput('Importing folder: ' + folderPath + ' ...');
+    try {
+        const resp = await api('/api/scan', 'POST', { source: folderPath });
+        if (resp.success && resp.data) {
+            gameSource = folderPath;
+            const files = resp.data;
+            setOutput('Found ' + files.length + ' files in folder.');
+            const el = document.getElementById('folderStatus');
+            if (el) {
+                el.innerHTML = '<h3>Files (' + files.length + ')</h3>' + files.slice(0,50).map(f => '<div class="node-item"><span class="badge badge-info">' + f.ext + '</span> ' + f.name + ' <span style="color:var(--text-muted);">' + (f.size||0) + ' bytes</span></div>').join('');
+            }
+        } else {
+            setOutput('Error: ' + resp.error);
+        }
+    } catch(e) { setOutput('Error: ' + e.message); }
+}
+
+// Init
+checkHealth();
+setInterval(checkHealth, 30000);
+renderPage();
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.athanor.engine",
   "build": {
-    "devUrl": "http://localhost:3459/editor",
+    "devUrl": "http://localhost:3459/dashboard",
     "frontendDist": "../xmlb_samples"
   },
   "app": {
@@ -15,7 +15,7 @@
       {
         "label": "main",
         "title": "Athanor Engine",
-        "url": "http://127.0.0.1:3459/editor",
+        "url": "http://127.0.0.1:3459/dashboard",
         "width": 1200,
         "height": 800,
         "minWidth": 900,

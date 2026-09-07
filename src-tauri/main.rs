@@ -3,6 +3,7 @@
 use axum::{
     routing::{get, post},
     Json, Router, response::IntoResponse,
+    extract::Query,
 };
 use athanor_core::{Compiler, Modification, CompileRequest};
 use serde::{Deserialize, Serialize};
@@ -39,6 +40,11 @@ struct ApiCompileRequest {
     modifications: Option<Vec<Modification>>,
 }
 
+#[derive(Deserialize)]
+struct SourceQuery {
+    source: Option<String>,
+}
+
 #[derive(Serialize)]
 struct ApiResponse<T: Serialize> {
     success: bool,
@@ -69,6 +75,7 @@ fn build_router() -> Router {
         .route("/api/health", get(health_check))
         .route("/editor", get(serve_editor))
         .route("/level-editor", get(serve_level_editor))
+        .route("/dashboard", get(serve_dashboard))
         .route("/*path", get(serve_static))
 }
 
@@ -208,12 +215,13 @@ async fn parse_file_handler(Json(req): Json<ParseRequest>) -> impl IntoResponse 
         let source_path = PathBuf::from(source);
         if source_path.is_dir() {
             source_path.join(&path)
+        } else if source_path.is_file() {
+            source_path
         } else {
-            // For now, require directory sources
             return Json(ApiResponse::<serde_json::Value> {
                 success: false,
                 data: None,
-                error: Some("Source must be a directory (ISO/XBE support planned)".to_string()),
+                error: Some(format!("Source path does not exist: {}", source)),
             });
         }
     } else {
@@ -359,8 +367,12 @@ async fn deploy_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse
 }
 
 /// Export ANIM file to JSON
-async fn export_anim_handler(axum::extract::Path(filename): axum::extract::Path<String>) -> impl IntoResponse {
-    let path = PathBuf::from(&filename);
+async fn export_anim_handler(axum::extract::Path(filename): axum::extract::Path<String>, Query(query): Query<SourceQuery>) -> impl IntoResponse {
+    let path = if let Some(source) = query.source {
+        PathBuf::from(source).join(&filename)
+    } else {
+        PathBuf::from(&filename)
+    };
     
     if !path.exists() {
         return Json(ApiResponse::<serde_json::Value> {
@@ -427,8 +439,12 @@ async fn import_anim_handler(Json(req): Json<serde_json::Value>) -> impl IntoRes
 }
 
 /// Export IGB texture to PNG
-async fn export_igb_handler(axum::extract::Path(filename): axum::extract::Path<String>) -> impl IntoResponse {
-    let path = PathBuf::from(&filename);
+async fn export_igb_handler(axum::extract::Path(filename): axum::extract::Path<String>, Query(query): Query<SourceQuery>) -> impl IntoResponse {
+    let path = if let Some(source) = query.source {
+        PathBuf::from(source).join(&filename)
+    } else {
+        PathBuf::from(&filename)
+    };
     
     if !path.exists() {
         return Json(ApiResponse::<serde_json::Value> {
@@ -509,8 +525,12 @@ async fn import_igb_handler(Json(req): Json<serde_json::Value>) -> impl IntoResp
 }
 
 /// Export CHRB file to JSON
-async fn export_chrb_handler(axum::extract::Path(filename): axum::extract::Path<String>) -> impl IntoResponse {
-    let path = PathBuf::from(&filename);
+async fn export_chrb_handler(axum::extract::Path(filename): axum::extract::Path<String>, Query(query): Query<SourceQuery>) -> impl IntoResponse {
+    let path = if let Some(source) = query.source {
+        PathBuf::from(source).join(&filename)
+    } else {
+        PathBuf::from(&filename)
+    };
     
     if !path.exists() {
         return Json(ApiResponse::<serde_json::Value> {
@@ -686,6 +706,14 @@ async fn serve_level_editor() -> impl IntoResponse {
     (
         [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
         axum::body::Body::from(html),
+    )
+}
+
+async fn serve_dashboard() -> impl IntoResponse {
+    let html = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/xmlb_samples/dashboard.html"));
+    (
+        [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+        html,
     )
 }
 
