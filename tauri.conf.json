@@ -48,11 +48,7 @@
   },
   "plugins": {
     "fs": {
-      "scope": {
-        "allow": [
-          "**"
-        ]
-      }
+      "requireLiteralLeadingDot": true
     }
   }
 }

@@ -732,7 +732,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
     
     let args: Vec<String> = std::env::args().collect();
-    let gui_mode = args.contains(&"--gui".to_string()) || args.contains(&"-g".to_string());
+    let server_mode = args.contains(&"--server".to_string()) || args.contains(&"-s".to_string());
     let help_mode = args.contains(&"--help".to_string()) || args.contains(&"-h".to_string());
     
     if help_mode {
@@ -743,10 +743,10 @@ async fn main() {
     let port = std::env::var("ATHANOR_PORT").unwrap_or_else(|_| "3459".to_string());
     let addr = format!("127.0.0.1:{}", port);
     
-    if gui_mode {
-        start_gui_mode(&addr).await;
-    } else {
+    if server_mode {
         start_server_mode(&addr).await;
+    } else {
+        start_gui_mode(&addr).await;
     }
 }
 
@@ -754,9 +754,9 @@ fn print_help() {
     println!("Athanor Engine - Binary Assembly/Disassembly/Compilation Tool");
     println!("");
     println!("Usage:");
-    println!("  athanor           Run in server mode (headless, port 3459)");
-    println!("  athanor --gui     Run with GUI (Tauri window + embedded server)");
-    println!("  athanor --help    Show this help");
+    println!("  athanor            Run with GUI (default)");
+    println!("  athanor --server   Run in headless server mode (port 3459)");
+    println!("  athanor --help     Show this help");
     println!("");
     println!("Environment variables:");
     println!("  ATHANOR_PORT      Port to bind the HTTP server (default: 3459)");
