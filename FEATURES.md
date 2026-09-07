@@ -860,6 +860,52 @@ athanor/
 
 ---
 
-**Last Updated**: 2026-09-06  
+**Last Updated**: 2026-09-07  
 **Version**: 0.1.0  
 **Purpose**: Console game decompilation for X-Men Legends series
+
+---
+
+# XV. IMPLEMENTATION PROGRESS REPORT
+
+## What is actually working end-to-end
+
+| Feature | Evidence |
+|---------|----------|
+| Folder import via `/api/scan` | Returns real file list for extracted game directories |
+| XMLB/BNX/BOYB/ZSM/ZSS parsing | Real binary parsing, string tables, node records |
+| CHRB/ANIM/IGB JSON export/import | Real parsers + rebuild pipeline |
+| PE executable parsing | Real section table, entry point, COFF header |
+| PS2 ISO 9660 directory extraction | Real sector parsing |
+| Xbox XISO mini entry table parsing | Real offset/size extraction |
+| GameCube GCM header reading | Real metadata from header |
+| DXT1/DXT5 decompression/compression | Real texture codec |
+| Compiler/rebuild pipeline | Real round-trip compilation |
+
+## What is partially real or stubbed
+
+| Feature | Evidence |
+|---------|----------|
+| XBE/ELF/DOL parsing | Partial: headers real, imports/exports empty, ELF names generic |
+| PHYS/AUD/COMP/PBR/PLGN/SAVE/PIPE/NAVB/PKGB/ENGB | Skeleton parsers only: 32-byte raw chunks, no semantic fields |
+| Disc metadata | Hardcoded strings for Xbox/PS2 |
+| Ghidra MCP | Fully stubbed: returns hardcoded `"main"` at `0x401000` |
+| `update_property` endpoint | No-op: returns JSON without writing disk |
+| `deploy` endpoint | No-op: returns formatted path, no file copy |
+| `scan` for ISO/XBE containers | Unimplemented |
+
+## Recent changes
+
+- Added Game Folder import page to dashboard
+- Fixed dashboard buttons by switching from inline `onclick` to delegated event listeners
+- Applied Godot design palette to dashboard UI
+- `parse_file_handler` now accepts both folders and files as source
+- CHRB/ANIM/IGB handlers now resolve files via optional `source` query parameter
+
+## Next steps
+
+1. Wire remaining folder-source loaders if endpoints still 404
+2. Replace stubbed parsers with real implementations
+3. Make Ghidra MCP actually call Ghidra headless analysis
+4. Implement `update_property` and `deploy` writeback
+5. Add ISO/XBE container listing to `scan_handler`
