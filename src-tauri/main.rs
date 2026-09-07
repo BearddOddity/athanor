@@ -64,6 +64,7 @@ fn build_router() -> Router {
         .route("/api/igb/import", post(import_igb_handler))
         .route("/api/chrb/{filename}", get(export_chrb_handler))
         .route("/api/chrb/import", post(import_chrb_handler))
+        .route("/api/disc/extract", post(extract_disc_handler))
         .route("/api/health", get(health_check))
         .route("/editor", get(serve_editor))
         .route("/level-editor", get(serve_level_editor))
@@ -570,6 +571,73 @@ async fn import_chrb_handler(Json(req): Json<serde_json::Value>) -> impl IntoRes
             success: false,
             data: None,
             error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Extract files from a console disc
+async fn extract_disc_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse {
+    let filename = req.get("filename").and_then(|v| v.as_str()).unwrap_or("");
+    let disc_type = req.get("disc_type").and_then(|v| v.as_str()).unwrap_or("auto");
+    
+    if filename.is_empty() {
+        return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some("Missing filename".to_string()),
+        });
+    }
+    
+    let path = std::path::PathBuf::from(filename);
+    if !path.exists() {
+        return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(format!("File not found: {}", filename)),
+        });
+    }
+    
+    let data = match std::fs::read(&path) {
+        Ok(d) => d,
+        Err(e) => return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    };
+    
+    let result = match disc_type {
+        "xbox" => athanor_core::console::extract_xbox_iso(&data),
+        "ps2" => athanor_core::console::extract_ps2_iso(&data),
+        "gamecube" | "gcm" => athanor_core::console::extract_gcm_iso(&data),
+        _ => athanor_core::console::extract_disc(&data),
+    };
+    
+    match result {
+        Ok(extract) => {
+            Json(ApiResponse::<serde_json::Value> {
+                success: true,
+                data: Some(serde_json::json!({
+                    "disc_type": format!("{:?}", extract.disc_type),
+                    "entry_count": extract.entries.len(),
+                    "title": extract.metadata.title,
+                    "vendor": extract.metadata.vendor,
+                    "disc_id": extract.metadata.disc_id,
+                    "boot_file": extract.metadata.boot_file,
+                    "entries": extract.entries.iter().map(|e| serde_json::json!({
+                        "path": e.path,
+                        "offset": e.offset,
+                        "size": e.size,
+                        "is_directory": e.is_directory
+                    })).collect::<Vec<_>>()
+                })),
+                error: None,
+            })
+        }
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(format!("Disc extraction failed: {}", e)),
         }),
     }
 }
