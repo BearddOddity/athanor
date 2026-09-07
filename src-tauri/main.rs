@@ -65,6 +65,7 @@ fn build_router() -> Router {
         .route("/api/chrb/{filename}", get(export_chrb_handler))
         .route("/api/chrb/import", post(import_chrb_handler))
         .route("/api/disc/extract", post(extract_disc_handler))
+        .route("/api/ghidra/rpc", post(ghidra_rpc_handler))
         .route("/api/health", get(health_check))
         .route("/editor", get(serve_editor))
         .route("/level-editor", get(serve_level_editor))
@@ -640,6 +641,24 @@ async fn extract_disc_handler(Json(req): Json<serde_json::Value>) -> impl IntoRe
             error: Some(format!("Disc extraction failed: {}", e)),
         }),
     }
+}
+
+/// Ghidra MCP RPC handler
+async fn ghidra_rpc_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse {
+    use athanor_core::ghidra::{GhidraMcpServer, McpRequest};
+    
+    let mut server = GhidraMcpServer::new();
+    
+    let mcp_req: McpRequest = match serde_json::from_value(req) {
+        Ok(r) => r,
+        Err(e) => return Json(serde_json::json!({
+            "jsonrpc": "2.0",
+            "error": { "code": -32700, "message": format!("Parse error: {}", e) }
+        })),
+    };
+    
+    let response = server.handle_request(mcp_req);
+    Json(serde_json::json!(response))
 }
 
 async fn health_check() -> impl IntoResponse {

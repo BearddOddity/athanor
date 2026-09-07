@@ -120,6 +120,7 @@ pub mod compiler;
 pub mod dxt;
 pub mod anchorpoint_integration;
 pub mod console;
+pub mod ghidra;
 
 // Re-exports
 pub use compiler::Compiler;
