@@ -53,6 +53,7 @@
         <div class="menubar-item">File</div>
         <div class="menubar-item">Edit</div>
         <div class="menubar-item">Level</div>
+        <div class="menubar-item" onclick="loadANIM('character.anim')">ANIM</div>
         <div class="menubar-item">Tools</div>
         <div class="menubar-item" style="margin-left:auto;">Help</div>
     </div>
@@ -110,10 +111,12 @@
 
     <script>
         // Init WebGL
-        const canvas = document.getElementById('webgl');
-        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-        
-        function resize() {
+const canvas = document.getElementById('webgl');
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    
+    let currentAnim = null; // Store current ANIM data
+    
+    function resize() {
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width;
             canvas.height = rect.height;
@@ -190,6 +193,45 @@
         function loop(ts) { t++; if (t >= 60) { document.getElementById('fps').textContent = fps; t = 0; } fps = 0;
             draw(); requestAnimationFrame(loop); fps++; }
         requestAnimationFrame(loop);
+        
+        // ANIM State Machine Functions
+        async function loadANIM(filename) {
+            try {
+                const resp = await fetch(`/api/anim/${filename}`);
+                const result = await resp.json();
+                if (result.success) {
+                    currentAnim = result.data;
+                    renderAnimStateGraph();
+                } else {
+                    console.error('Failed to load ANIM:', result.error);
+                }
+            } catch (e) {
+                console.error('ANIM load error:', e);
+            }
+        }
+        
+        function renderAnimStateGraph() {
+            if (!currentAnim) return;
+            const h = document.getElementById('hierarchy');
+            h.innerHTML = '<div class="sidebar-header" style="font-size:12px;margin-bottom:8px;">ANIM States</div>';
+            currentAnim.states.forEach(s => {
+                h.innerHTML += `<div class="node" onclick="selAnim(${s.index})"><span>🔄</span> ${s.type_id || 'State '}${s.index}</div>`;
+            });
+        }
+        
+        function selAnim(idx) {
+            const s = currentAnim?.states?.[idx];
+            if (!s) return;
+            document.getElementById('position').textContent = 'Type: ' + s.type_id;
+            document.getElementById('rotation').textContent = 'Loop: ' + s.loop;
+            document.getElementById('scale').textContent = 'Speed: ' + s.speed.toFixed(2);
+        }
+        
+        function exportAnimJSON() {
+            if (currentAnim) {
+                console.log('ANIM JSON:', JSON.stringify(currentAnim, null, 2));
+            }
+        }
     </script>
 </body>
 </html>

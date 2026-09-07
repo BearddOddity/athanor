@@ -656,7 +656,7 @@ Plugin System ──────┴──> Format Plugins
 ## Complete
 - [x] Binary Parser (20 formats: XMLB, PKGB, ENGB, BOYB, CHRB, NAVB, BNX, IGB, ZSM, ZSS, ZAM, ANIM, PHYS, AUD, COMP, PBR, PLGN, SAVE, PIPE)
 - [x] Binary Builder (20 formats - round-trip compilation)
-- [x] HTTP API Server (Axum) with /api/load, /api/save, /api/property, /api/deploy
+- [x] HTTP API Server (Axum) with /api/load, /api/save, /api/property, /api/deploy, /api/anim, /api/anim/import
 - [x] Tauri Desktop GUI
 - [x] Headless Server Mode
 - [x] Asset Editor V2 (Godot-style panels)
@@ -670,8 +670,10 @@ Plugin System ──────┴──> Format Plugins
 
 ## In Progress
 - [ ] Editor UI improvements (Godot-inspired but unique design)
-- [ ] IGB texture extraction/rebuild
-- [ ] ANIM animation export
+
+## Complete
+- [x] IGB texture extraction/rebuild (export/import endpoints wired)
+- [x] ANIM animation export (JSON export/import pipeline wired)
 
 ## Planned (Phase 1) - Console Binary Analysis
 - [ ] Console disc extraction (Xbox ISO, PS2 ISO, GCM)

@@ -58,6 +58,10 @@ fn build_router() -> Router {
         .route("/api/save", post(save_file_handler))
         .route("/api/property/{filename}/{node_idx}/{prop_key}", post(update_property_handler))
         .route("/api/deploy", post(deploy_handler))
+        .route("/api/anim/{filename}", get(export_anim_handler))
+        .route("/api/anim/import", post(import_anim_handler))
+        .route("/api/igb/{filename}", get(export_igb_handler))
+        .route("/api/igb/import", post(import_igb_handler))
         .route("/api/health", get(health_check))
         .route("/editor", get(serve_editor))
         .route("/level-editor", get(serve_level_editor))
@@ -348,6 +352,156 @@ async fn deploy_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse
         data: Some(serde_json::json!({"path": format!("{}/{}", game_dir, filename)})),
         error: None,
     })
+}
+
+/// Export ANIM file to JSON
+async fn export_anim_handler(axum::extract::Path(filename): axum::extract::Path<String>) -> impl IntoResponse {
+    let path = PathBuf::from(&filename);
+    
+    if !path.exists() {
+        return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(format!("File not found: {}", filename)),
+        });
+    }
+    
+    match std::fs::read(&path) {
+        Ok(data) => {
+            match athanor_core::parser::export_anim_json(&data) {
+                Ok(json) => Json(ApiResponse::<serde_json::Value> {
+                    success: true,
+                    data: Some(json),
+                    error: None,
+                }),
+                Err(e) => Json(ApiResponse::<serde_json::Value> {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Import JSON and build ANIM file
+async fn import_anim_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse {
+    let output_path = req.get("output_path").and_then(|v| v.as_str()).unwrap_or("output/anim_exported.anim");
+    
+    match athanor_core::parser::import_anim_json(&req) {
+        Ok(data) => {
+            if let Some(parent) = std::path::Path::new(output_path).parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            match std::fs::write(output_path, &data) {
+                Ok(_) => Json(ApiResponse::<serde_json::Value> {
+                    success: true,
+                    data: Some(serde_json::json!({
+                        "output_path": output_path,
+                        "bytes_written": data.len()
+                    })),
+                    error: None,
+                }),
+                Err(e) => Json(ApiResponse::<serde_json::Value> {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Export IGB texture to PNG
+async fn export_igb_handler(axum::extract::Path(filename): axum::extract::Path<String>) -> impl IntoResponse {
+    let path = PathBuf::from(&filename);
+    
+    if !path.exists() {
+        return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(format!("File not found: {}", filename)),
+        });
+    }
+    
+    match std::fs::read(&path) {
+        Ok(data) => {
+            match athanor_core::parser::export_igb_texture(&data) {
+                Ok(rgba_data) => {
+                    let width = u32::from_le_bytes([rgba_data[0], rgba_data[1], rgba_data[2], rgba_data[3]]);
+                    let height = u32::from_le_bytes([rgba_data[4], rgba_data[5], rgba_data[6], rgba_data[7]]);
+                    Json(ApiResponse::<serde_json::Value> {
+                        success: true,
+                        data: Some(serde_json::json!({
+                            "width": width,
+                            "height": height,
+                            "format": "RGBA",
+                            "data_size": rgba_data.len() - 8
+                        })),
+                        error: None,
+                    })
+                }
+                Err(e) => Json(ApiResponse::<serde_json::Value> {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Import PNG and build IGB file
+async fn import_igb_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse {
+    let output_path = req.get("output_path").and_then(|v| v.as_str()).unwrap_or("output/texture.igb");
+    let width = req.get("width").and_then(|v| v.as_u64()).unwrap_or(256) as u32;
+    let height = req.get("height").and_then(|v| v.as_u64()).unwrap_or(256) as u32;
+    let png_data_base64 = req.get("data").and_then(|v| v.as_str()).unwrap_or("");
+    
+    let png_data = base64::decode(png_data_base64).unwrap_or_default();
+    
+    match athanor_core::parser::build_igb_from_png(&png_data, width, height) {
+        Ok(data) => {
+            if let Some(parent) = std::path::Path::new(output_path).parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            match std::fs::write(output_path, &data) {
+                Ok(_) => Json(ApiResponse::<serde_json::Value> {
+                    success: true,
+                    data: Some(serde_json::json!({
+                        "output_path": output_path,
+                        "bytes_written": data.len()
+                    })),
+                    error: None,
+                }),
+                Err(e) => Json(ApiResponse::<serde_json::Value> {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
 }
 
 async fn health_check() -> impl IntoResponse {

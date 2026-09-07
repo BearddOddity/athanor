@@ -334,6 +334,9 @@ fn parse_anim(data: &[u8]) -> Vec<ParsedNode> {
     let mut nodes = Vec::new();
     if data.len() < 32 { return nodes; }
     let state_count = u32::from_le_bytes([data[24], data[25], data[26], data[27]]) as usize;
+    let trans_count = u32::from_le_bytes([data[28], data[29], data[30], data[31]]) as usize;
+    
+    // Parse states
     for i in 0..state_count {
         let off = 32 + i * 32;
         if off + 32 > data.len() { break; }
@@ -344,7 +347,196 @@ fn parse_anim(data: &[u8]) -> Vec<ParsedNode> {
             raw_bytes: data[off..off + 32].to_vec(),
         });
     }
+    
+    // Parse transitions
+    let trans_start = 32 + state_count * 32;
+    for i in 0..trans_count {
+        let off = trans_start + i * 32;
+        if off + 32 > data.len() { break; }
+        nodes.push(ParsedNode {
+            index: nodes.len(), file_offset: off as u32,
+            node_type: Some("ANIM_TRANSITION".to_string()),
+            name: None, properties: vec![],
+            raw_bytes: data[off..off + 32].to_vec(),
+        });
+    }
+    
     nodes
+}
+
+/// Export ANIM to JSON structure
+pub fn export_anim_json(data: &[u8]) -> Result<serde_json::Value> {
+    if data.len() < 32 {
+        return Err(AthanorError::InvalidData("ANIM file too small".to_string()));
+    }
+    
+    let magic = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    if magic != 0x0000414E {
+        return Err(AthanorError::InvalidData("Invalid ANIM magic".to_string()));
+    }
+    
+    let state_count = u32::from_le_bytes([data[24], data[25], data[26], data[27]]) as usize;
+    let trans_count = u32::from_le_bytes([data[28], data[29], data[30], data[31]]) as usize;
+    
+    let mut states = Vec::new();
+    let mut transitions = Vec::new();
+    
+    // Parse states (32 bytes each)
+    for i in 0..state_count {
+        let off = 32 + i * 32;
+        if off + 32 > data.len() { break; }
+        let state_data = &data[off..off + 32];
+        
+        // Parse state properties
+        let state_type = u32::from_le_bytes([state_data[0], state_data[1], state_data[2], state_data[3]]);
+        let loop_flag = u32::from_le_bytes([state_data[20], state_data[21], state_data[22], state_data[23]]);
+        let speed = f32::from_le_bytes([state_data[24], state_data[25], state_data[26], state_data[27]]);
+        
+        states.push(serde_json::json!({
+            "index": i,
+            "offset": off,
+            "type_id": state_type,
+            "loop": loop_flag != 0,
+            "speed": speed,
+            "raw": state_data.iter().map(|b| format!("{:02X}", b)).collect::<String>(),
+        }));
+    }
+    
+    // Parse transitions (32 bytes each)
+    let trans_start = 32 + state_count * 32;
+    for i in 0..trans_count {
+        let off = trans_start + i * 32;
+        if off + 32 > data.len() { break; }
+        let trans_data = &data[off..off + 32];
+        
+        transitions.push(serde_json::json!({
+            "index": i,
+            "offset": off,
+            "raw": trans_data.iter().map(|b| format!("{:02X}", b)).collect::<String>(),
+        }));
+    }
+    
+    Ok(serde_json::json!({
+        "format": "ANIM",
+        "magic": magic,
+        "state_count": state_count,
+        "transition_count": trans_count,
+        "states": states,
+        "transitions": transitions,
+    }))
+}
+
+/// Import ANIM from JSON structure
+pub fn import_anim_json(json: &serde_json::Value) -> Result<Vec<u8>> {
+    let state_count = json.get("state_count").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+    let trans_count = json.get("transition_count").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+    
+    let mut output = Vec::new();
+    
+    // Header
+    output.extend_from_slice(&0x0000414Eu32.to_le_bytes()); // Magic
+    output.extend_from_slice(&1u32.to_le_bytes()); // Version
+    output.extend_from_slice(&(32u32 + (state_count * 32) as u32).to_le_bytes()); // String table offset
+    output.extend_from_slice(&0xFFFFFFFFu32.to_le_bytes()); // Reserved
+    
+    // State count
+    output.extend_from_slice(&(state_count as u32).to_le_bytes());
+    // Transition count
+    output.extend_from_slice(&(trans_count as u32).to_le_bytes());
+    
+    // States (32 bytes each)
+    if let Some(states) = json.get("states").and_then(|v| v.as_array()) {
+        for state in states.iter().take(state_count) {
+            let mut state_bytes = [0u8; 32];
+            
+            if let Some(type_id) = state.get("type_id").and_then(|v| v.as_u64()) {
+                state_bytes[0..4].copy_from_slice(&(type_id as u32).to_le_bytes());
+            }
+            if let Some(loop_flag) = state.get("loop").and_then(|v| v.as_bool()) {
+                state_bytes[20..24].copy_from_slice(&(if loop_flag { 1u32 } else { 0u32 }).to_le_bytes());
+            }
+            if let Some(speed) = state.get("speed").and_then(|v| v.as_f64()) {
+                state_bytes[24..28].copy_from_slice(&(speed as f32).to_le_bytes());
+            }
+            
+            output.extend_from_slice(&state_bytes);
+        }
+    }
+    
+    // Pad to 32-byte alignment
+    while output.len() % 32 != 0 {
+        output.push(0);
+    }
+    
+    // Transitions (32 bytes each)
+    if let Some(trans) = json.get("transitions").and_then(|v| v.as_array()) {
+        for trans in trans.iter().take(trans_count) {
+            let mut trans_bytes = [0u8; 32];
+            
+            if let Some(from) = trans.get("from_state").and_then(|v| v.as_u64()) {
+                trans_bytes[0..4].copy_from_slice(&(from as u32).to_le_bytes());
+            }
+            if let Some(to) = trans.get("to_state").and_then(|v| v.as_u64()) {
+                trans_bytes[4..8].copy_from_slice(&(to as u32).to_le_bytes());
+            }
+            
+            output.extend_from_slice(&trans_bytes);
+        }
+    }
+    
+    Ok(output)
+}
+
+/// Rebuild ANIM file from modified data
+pub fn rebuild_anim(original_data: &[u8], states: &[serde_json::Value]) -> Result<Vec<u8>> {
+    let trans_count = if original_data.len() >= 32 {
+        u32::from_le_bytes([original_data[28], original_data[29], original_data[30], original_data[31]]) as usize
+    } else {
+        0
+    };
+    
+    let state_count = states.len();
+    
+    let mut output = Vec::new();
+    
+    // Header
+    output.extend_from_slice(&0x0000414Eu32.to_le_bytes());
+    output.extend_from_slice(&1u32.to_le_bytes());
+    output.extend_from_slice(&(32u32 + (state_count * 32) as u32).to_le_bytes());
+    output.extend_from_slice(&0xFFFFFFFFu32.to_le_bytes());
+    
+    output.extend_from_slice(&(state_count as u32).to_le_bytes());
+    output.extend_from_slice(&(trans_count as u32).to_le_bytes());
+    
+    // States
+    for state in states {
+        let mut state_bytes = [0u8; 32];
+        
+        if let Some(type_id) = state.get("type_id").and_then(|v| v.as_u64()) {
+            state_bytes[0..4].copy_from_slice(&(type_id as u32).to_le_bytes());
+        }
+        if let Some(loop_flag) = state.get("loop").and_then(|v| v.as_bool()) {
+            state_bytes[20..24].copy_from_slice(&(if loop_flag { 1u32 } else { 0u32 }).to_le_bytes());
+        }
+        if let Some(speed) = state.get("speed").and_then(|v| v.as_f64()) {
+            state_bytes[24..28].copy_from_slice(&(speed as f32).to_le_bytes());
+        }
+        
+        output.extend_from_slice(&state_bytes);
+    }
+    
+    // Pad to 32-byte alignment
+    while output.len() % 32 != 0 {
+        output.push(0);
+    }
+    
+    // Transitions (preserve from original if available)
+    let trans_start = 32 + state_count * 32;
+    if trans_count > 0 && original_data.len() >= trans_start + trans_count * 32 {
+        output.extend_from_slice(&original_data[trans_start..trans_start + trans_count * 32]);
+    }
+    
+    Ok(output)
 }
 
 fn parse_phys(data: &[u8]) -> Vec<ParsedNode> {
@@ -693,4 +885,51 @@ mod tests {
             }
         }
     }
+}
+
+use crate::dxt::{decompress, compress, DxtFormat};
+
+/// Export IGB texture to PNG structure
+pub fn export_igb_texture(data: &[u8]) -> Result<Vec<u8>> {
+    if data.len() < 16 { return Err(AthanorError::InvalidData("IGB file too small".to_string())); }
+    
+    if data[0] != 0xA4 || data[1] != 0x02 {
+        return Err(AthanorError::InvalidData("Invalid IGB magic".to_string()));
+    }
+    
+    let width = u16::from_le_bytes([data[8], data[9]]) as u32;
+    let height = u16::from_le_bytes([data[10], data[11]]) as u32;
+    let format_tag = u32::from_le_bytes([data[12], data[13], data[14], data[15]]);
+    
+    let format = if format_tag == 0x31545844 { DxtFormat::Dxt1 } else { DxtFormat::Dxt5 };
+    
+    let rgba = decompress(data, width, height, format)
+        .map_err(|e| AthanorError::InvalidData(format!("DXT decompression error: {}", e)))?;
+    
+    let mut result = Vec::new();
+    result.extend_from_slice(&width.to_le_bytes());
+    result.extend_from_slice(&height.to_le_bytes());
+    result.extend_from_slice(&rgba);
+    
+    Ok(result)
+}
+
+/// Import PNG data and build IGB file
+pub fn build_igb_from_png(png_data: &[u8], width: u32, height: u32) -> Result<Vec<u8>> {
+    let format = DxtFormat::Dxt1;
+    let compressed = compress(png_data, width, height, format);
+    
+    let mut output = Vec::new();
+    output.extend_from_slice(&0xA4020000u32.to_le_bytes());
+    output.extend_from_slice(&1u32.to_le_bytes());
+    output.extend_from_slice(&width.to_le_bytes());
+    output.extend_from_slice(&height.to_le_bytes());
+    output.extend_from_slice(&(0x31545844u32).to_le_bytes());
+    output.extend_from_slice(&compressed);
+    
+    while output.len() % 32 != 0 {
+        output.push(0);
+    }
+    
+    Ok(output)
 }
