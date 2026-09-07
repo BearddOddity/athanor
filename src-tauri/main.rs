@@ -62,6 +62,8 @@ fn build_router() -> Router {
         .route("/api/anim/import", post(import_anim_handler))
         .route("/api/igb/{filename}", get(export_igb_handler))
         .route("/api/igb/import", post(import_igb_handler))
+        .route("/api/chrb/{filename}", get(export_chrb_handler))
+        .route("/api/chrb/import", post(import_chrb_handler))
         .route("/api/health", get(health_check))
         .route("/editor", get(serve_editor))
         .route("/level-editor", get(serve_level_editor))
@@ -476,6 +478,74 @@ async fn import_igb_handler(Json(req): Json<serde_json::Value>) -> impl IntoResp
     let png_data = base64::decode(png_data_base64).unwrap_or_default();
     
     match athanor_core::parser::build_igb_from_png(&png_data, width, height) {
+        Ok(data) => {
+            if let Some(parent) = std::path::Path::new(output_path).parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            match std::fs::write(output_path, &data) {
+                Ok(_) => Json(ApiResponse::<serde_json::Value> {
+                    success: true,
+                    data: Some(serde_json::json!({
+                        "output_path": output_path,
+                        "bytes_written": data.len()
+                    })),
+                    error: None,
+                }),
+                Err(e) => Json(ApiResponse::<serde_json::Value> {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Export CHRB file to JSON
+async fn export_chrb_handler(axum::extract::Path(filename): axum::extract::Path<String>) -> impl IntoResponse {
+    let path = PathBuf::from(&filename);
+    
+    if !path.exists() {
+        return Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(format!("File not found: {}", filename)),
+        });
+    }
+    
+    match std::fs::read(&path) {
+        Ok(data) => {
+            match athanor_core::parser::export_chrb_json(&data) {
+                Ok(json) => Json(ApiResponse::<serde_json::Value> {
+                    success: true,
+                    data: Some(json),
+                    error: None,
+                }),
+                Err(e) => Json(ApiResponse::<serde_json::Value> {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                }),
+            }
+        }
+        Err(e) => Json(ApiResponse::<serde_json::Value> {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+/// Import JSON and build CHRB file
+async fn import_chrb_handler(Json(req): Json<serde_json::Value>) -> impl IntoResponse {
+    let output_path = req.get("output_path").and_then(|v| v.as_str()).unwrap_or("output/character.chrb");
+    
+    match athanor_core::parser::import_chrb_json(&req) {
         Ok(data) => {
             if let Some(parent) = std::path::Path::new(output_path).parent() {
                 let _ = std::fs::create_dir_all(parent);

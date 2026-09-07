@@ -933,3 +933,91 @@ pub fn build_igb_from_png(png_data: &[u8], width: u32, height: u32) -> Result<Ve
     
     Ok(output)
 }
+/// Export CHRB to JSON structure
+pub fn export_chrb_json(data: &[u8]) -> Result<serde_json::Value> {
+    if data.len() < 24 {
+        return Err(AthanorError::InvalidData("CHRB file too small".to_string()));
+    }
+    
+    let magic = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    let version = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
+    let strtab_offset = u32::from_le_bytes([data[8], data[9], data[10], data[11]]);
+    let reserved = u32::from_le_bytes([data[12], data[13], data[14], data[15]]);
+    let char_count = u32::from_le_bytes([data[20], data[21], data[22], data[23]]) as usize;
+    
+    let mut chars = Vec::new();
+    
+    for i in 0..char_count {
+        let off = 24 + i * 64;
+        if off + 64 > data.len() { break; }
+        let char_data = &data[off..off + 64];
+        
+        let char_type = u32::from_le_bytes([char_data[0], char_data[1], char_data[2], char_data[3]]);
+        let health = f32::from_le_bytes([char_data[8], char_data[9], char_data[10], char_data[11]]);
+        let speed = f32::from_le_bytes([char_data[12], char_data[13], char_data[14], char_data[15]]);
+        
+        chars.push(serde_json::json!({
+            "index": i,
+            "offset": off,
+            "type_id": char_type,
+            "health": health,
+            "speed": speed,
+            "raw": char_data.iter().map(|b| format!("{:02X}", b)).collect::<String>(),
+        }));
+    }
+    
+    Ok(serde_json::json!({
+        "format": "CHRB",
+        "magic": magic,
+        "version": version,
+        "strtab_offset": strtab_offset,
+        "reserved": reserved,
+        "character_count": char_count,
+        "characters": chars,
+    }))
+}
+
+/// Import JSON and build CHRB file
+pub fn import_chrb_json(json: &serde_json::Value) -> Result<Vec<u8>> {
+    let char_count = json.get("character_count").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+    
+    let mut output = Vec::new();
+    
+    // Header (24 bytes)
+    output.extend_from_slice(&0x00004843u32.to_le_bytes()); // Magic CH
+    output.extend_from_slice(&1u32.to_le_bytes()); // Version
+    output.extend_from_slice(&0u32.to_le_bytes()); // String table offset
+    output.extend_from_slice(&0u32.to_le_bytes()); // Reserved
+    
+    // Pad header to 24 bytes
+    while output.len() < 20 {
+        output.push(0);
+    }
+    output.extend_from_slice(&(char_count as u32).to_le_bytes());
+    
+    // Characters (64 bytes each)
+    if let Some(chars) = json.get("characters").and_then(|v| v.as_array()) {
+        for char_data in chars.iter().take(char_count) {
+            let mut node_bytes = [0u8; 64];
+            
+            if let Some(type_id) = char_data.get("type_id").and_then(|v| v.as_u64()) {
+                node_bytes[0..4].copy_from_slice(&(type_id as u32).to_le_bytes());
+            }
+            if let Some(health) = char_data.get("health").and_then(|v| v.as_f64()) {
+                node_bytes[8..12].copy_from_slice(&(health as f32).to_le_bytes());
+            }
+            if let Some(speed) = char_data.get("speed").and_then(|v| v.as_f64()) {
+                node_bytes[12..16].copy_from_slice(&(speed as f32).to_le_bytes());
+            }
+            
+            output.extend_from_slice(&node_bytes);
+        }
+    }
+    
+    // Pad to alignment
+    while output.len() % 32 != 0 {
+        output.push(0);
+    }
+    
+    Ok(output)
+}

@@ -670,13 +670,14 @@ Plugin System ──────┴──> Format Plugins
 
 ## In Progress
 - [ ] Editor UI improvements (Godot-inspired but unique design)
+- [ ] Console disc extraction (Xbox ISO, PS2 ISO, GCM)
 
 ## Complete
 - [x] IGB texture extraction/rebuild (export/import endpoints wired)
 - [x] ANIM animation export (JSON export/import pipeline wired)
+- [x] CHRB character format (export/import endpoints wired)
 
 ## Planned (Phase 1) - Console Binary Analysis
-- [ ] Console disc extraction (Xbox ISO, PS2 ISO, GCM)
 - [ ] Executable format parsers (Xbox XBE, PS2 ELF, GCN DOL)
 - [ ] Ghidra MCP Server for headless analysis
 - [ ] Symbol recovery and documentation
